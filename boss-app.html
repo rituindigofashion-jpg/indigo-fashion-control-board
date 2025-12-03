@@ -1,0 +1,2806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Indigo Fashion Control Board - Boss</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-bg-dark: #F5F5F0;
+            --color-bg-card: rgba(0, 0, 0, 0.03);
+            --color-bg-card-hover: rgba(0, 0, 0, 0.06);
+            --color-primary: #000000; /* Zara Black */
+            --color-primary-dim: #333333;
+            --color-text-main: #000000;
+            --color-text-muted: #666666;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            --glass-border: 1px solid rgba(0, 0, 0, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-bottom: 100px; /* Space for bottom nav */
+        }
+
+        /* Status Bar Placeholder */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 0 4px;
+            margin-bottom: -10px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-top: 12px;
+        }
+
+        .header-content h1 {
+            font-family: var(--font-serif);
+            font-size: 32px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .header-content .subtitle {
+            color: var(--color-primary);
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .home-link {
+            background: rgba(0,0,0,0.03);
+            border: var(--glass-border);
+            border-radius: 12px;
+            padding: 10px;
+            color: var(--color-text-muted);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .home-link:active {
+            transform: scale(0.95);
+            background: rgba(0,0,0,0.05);
+        }
+
+        /* Bento Grid Layout */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .bento-card {
+            background: var(--color-bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: var(--glass-border);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+
+        .bento-card.wide {
+            grid-column: span 2;
+        }
+
+        /* Card Typography */
+        .card-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-value {
+            font-family: var(--font-serif);
+            font-size: 36px;
+            font-weight: 600;
+            color: #000;
+            line-height: 1;
+        }
+
+        .card-sub {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin-top: 6px;
+        }
+
+        /* Health Indicator */
+        .health-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-success);
+            box-shadow: 0 0 12px var(--color-success);
+        }
+        
+        .health-indicator.warning {
+             background: var(--color-warning);
+             box-shadow: 0 0 12px var(--color-warning);
+        }
+
+        .health-indicator.critical {
+             background: var(--color-danger);
+             box-shadow: 0 0 12px var(--color-danger);
+        }
+
+        /* Action Grid */
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: var(--color-bg-card);
+            border: var(--glass-border);
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:active {
+            background: var(--color-bg-card-hover);
+            transform: scale(0.98);
+        }
+
+        .action-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        
+        .action-btn.warning .icon-box {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--color-warning);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .action-info h3 {
+            font-family: var(--font-sans);
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 2px;
+        }
+
+        .action-info p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .badge {
+            background: var(--color-primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            max-width: 440px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            padding: 16px 8px;
+            z-index: 100;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .nav-item.active {
+            color: var(--color-primary);
+            opacity: 1;
+        }
+        
+        .nav-item.active svg {
+            stroke-width: 2.5px;
+        }
+
+        /* Modals - Updated Design */
+        .modal-overlay {
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: #0f172a;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Helper for Lucide icons */
+        .lucide {
+            width: 24px;
+            height: 24px;
+        }
+        .nav-icon svg { width: 22px; height: 22px; }
+        .card-label svg { width: 14px; height: 14px; opacity: 0.7; }
+        
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- iPhone Status Bar Placeholder -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <i data-lucide="signal" style="width: 14px; height: 14px;"></i>
+                <i data-lucide="wifi" style="width: 14px; height: 14px;"></i>
+                <i data-lucide="battery-full" style="width: 14px; height: 14px;"></i>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>Indigo<br>Control Board</h1>
+                <div class="subtitle">Boss Dashboard</div>
+            </div>
+            <button onclick="logout()" class="home-link" title="Logout">
+                <i data-lucide="log-out" style="width: 20px; height: 20px;"></i>
+            </button>
+        </div>
+
+        <!-- Bento Grid Stats -->
+        <div class="bento-grid">
+            <!-- Attendance Card - Enhanced -->
+            <div class="bento-card" id="businessHealth" style="grid-column: span 2;">
+                <div class="health-indicator" id="healthIndicator"></div>
+                <div class="card-label">
+                    <i data-lucide="users"></i> <span id="attendanceLabel">Attendance</span>
+                </div>
+                <div class="card-value" id="presentCount">--</div>
+                <div class="card-sub" id="pendingCount">Waiting for upload...</div>
+                
+                <!-- Attendance Stats Row -->
+                <div id="attendanceStats" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; gap: 8px;">
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--color-success);" id="statPresent">0</div>
+                            <div style="font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Present</div>
+                        </div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--color-warning);" id="statLate">0</div>
+                            <div style="font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Late</div>
+                        </div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--color-danger);" id="statAbsent">0</div>
+                            <div style="font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Absent</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Grid -->
+        <div class="action-grid">
+            <h2 style="font-size: 14px; color: var(--color-text-muted); margin-left: 4px; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;">Quick Actions</h2>
+            
+            <div class="action-btn warning" id="approveExpenses" onclick="handleApproveExpenses()">
+                <div class="action-content">
+                    <div class="icon-box">
+                        <i data-lucide="check-circle-2"></i>
+                    </div>
+                    <div class="action-info">
+                        <div class="button-title">Approve Expenses</div>
+                        <div class="button-subtitle">High Value (> 5k)</div>
+                    </div>
+                </div>
+                <span class="badge" id="expenseBadge">2</span>
+            </div>
+
+            <div class="action-btn" id="viewOrders" onclick="handleViewOrders()">
+                <div class="action-content">
+                    <div class="icon-box">
+                        <i data-lucide="package"></i>
+                    </div>
+                    <div class="action-info">
+                        <div class="button-title">View Orders</div>
+                        <div class="button-subtitle">Commission Tracking</div>
+                    </div>
+                </div>
+                <span class="badge" id="ordersBadge" style="background: rgba(0,0,0,0.05); color: #000;">0</span>
+            </div>
+
+            <div class="action-btn" id="sendMessage" onclick="handleSendMessage()">
+                <div class="action-content">
+                    <div class="icon-box">
+                        <i data-lucide="message-circle"></i>
+                    </div>
+                    <div class="action-info">
+                        <div class="button-title">Messages</div>
+                        <div class="button-subtitle">Send & view replies</div>
+                    </div>
+                </div>
+                <span class="badge" id="repliesBadge" style="display: none; background: var(--color-success);">0</span>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="index.html" class="nav-item">
+                <div class="nav-icon"><i data-lucide="home"></i></div>
+                <span>Home</span>
+            </a>
+            <a href="employee-app.html" class="nav-item">
+                <div class="nav-icon"><i data-lucide="users"></i></div>
+                <span>Employee</span>
+            </a>
+            <a href="#" onclick="openUploadModal(); return false;" class="nav-item">
+                <div class="nav-icon"><i data-lucide="upload"></i></div>
+                <span>Upload</span>
+            </a>
+            <a href="#" class="nav-item active">
+                <div class="nav-icon"><i data-lucide="layout-dashboard"></i></div>
+                <span>Dash</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Expense Approval Modal -->
+    <div id="expenseModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; border-radius: 24px; padding: 24px; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: #000;">Approve Expenses</h2>
+                <button onclick="closeExpenseModal()" style="background: none; border: none; color: #666; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div id="expenseList" style="margin-bottom: 20px;">
+                <!-- Expenses will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Modal -->
+    <div id="ordersModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; border-radius: 24px; padding: 24px; max-width: 90%; width: 400px; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: #000;">Recent Orders</h2>
+                <button onclick="closeOrdersModal()" style="background: none; border: none; color: #666; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div id="ordersList">
+                <!-- Orders will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; border-radius: 24px; padding: 24px; max-width: 90%; width: 500px; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: #000;">
+                    <i data-lucide="message-circle" style="width: 24px; height: 24px; vertical-align: middle;"></i>
+                    Messages
+                </h2>
+                <button onclick="closeMessageModal()" style="background: none; border: none; color: #666; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+            
+            <!-- Send New Message Section -->
+            <div style="background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #000; margin-bottom: 12px;">Send New Message to Team</h3>
+                <textarea id="messageText" placeholder="Type your message to the team..." style="width: 100%; min-height: 100px; padding: 12px; background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; color: #000; font-family: var(--font-sans); font-size: 14px; resize: vertical; margin-bottom: 12px; outline: none;"></textarea>
+                <button onclick="sendNewMessage()" style="width: 100%; padding: 12px; background: var(--color-primary); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                    <i data-lucide="send" style="width: 16px; height: 16px; vertical-align: middle;"></i> Send Message
+                </button>
+            </div>
+            
+            <!-- Previous Messages & Replies -->
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600; color: #000; margin-bottom: 16px;">Sent Messages & Replies</h3>
+                <div id="messagesHistory">
+                    <!-- Messages will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div id="rejectReasonModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; border-radius: 24px; padding: 24px; max-width: 90%; width: 400px; border: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: #000;">Reject Expense</h2>
+                <button onclick="closeRejectModal()" style="background: none; border: none; color: #666; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+            
+            <!-- Expense details -->
+            <div id="rejectExpenseDetails" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <!-- Will be populated dynamically -->
+            </div>
+            
+            <label style="display: block; margin-bottom: 8px; font-size: 13px; color: var(--color-text-muted); font-weight: 500;">
+                Rejection Reason <span style="color: var(--color-danger);">*</span>
+            </label>
+            <textarea 
+                id="rejectionReasonText" 
+                placeholder="Please provide a reason for rejecting this expense..." 
+                style="width: 100%; min-height: 120px; padding: 16px; background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0,0,0,0.05); border-radius: 16px; color: #000; font-family: var(--font-sans); font-size: 14px; resize: vertical; margin-bottom: 20px; outline: none;"
+                required></textarea>
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="closeRejectModal()" style="flex: 1; padding: 14px; background: rgba(0,0,0,0.03); color: #94a3b8; border: none; border-radius: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button onclick="submitRejection()" style="flex: 1; padding: 14px; background: var(--color-danger); color: #fff; border: none; border-radius: 14px; font-weight: 600; cursor: pointer;">Reject Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Upload Modal -->
+    <div id="uploadModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+        <div class="modal-content" style="background: #fff; border-radius: 24px; padding: 24px; max-width: 90%; width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-serif); font-size: 24px; font-weight: 600; color: #000;">
+                    <i data-lucide="upload-cloud" style="width: 24px; height: 24px; vertical-align: middle;"></i>
+                    Upload Data to Supabase
+                </h2>
+                <button onclick="closeUploadModal()" style="background: none; border: none; color: #666; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+
+            <!-- Upload Status Banner -->
+            <div id="uploadStatus" style="display: none; padding: 12px; border-radius: 12px; margin-bottom: 16px; font-size: 14px;"></div>
+
+            <!-- Attendance Upload -->
+            <div style="background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <i data-lucide="calendar-check" style="width: 24px; height: 24px; color: var(--color-primary);"></i>
+                    <h3 style="font-size: 16px; font-weight: 600; color: #000; margin: 0;">Attendance Data</h3>
+                </div>
+                <p style="font-size: 13px; color: #666; margin: 0 0 12px 0;">Upload Excel with columns: Name, Date, Clock In, Clock Out, Late, Absent</p>
+                <input type="file" id="attendanceFile" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleAttendanceUpload(event)">
+                <button onclick="document.getElementById('attendanceFile').click()" style="width: 100%; padding: 12px; background: var(--color-primary); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                    <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px; vertical-align: middle;"></i> Choose File
+                </button>
+                <div id="attendanceProgress" style="display: none; margin-top: 12px; font-size: 13px; color: #666;"></div>
+            </div>
+
+            <!-- Expense Upload -->
+            <div style="background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <i data-lucide="receipt" style="width: 24px; height: 24px; color: var(--color-warning);"></i>
+                    <h3 style="font-size: 16px; font-weight: 600; color: #000; margin: 0;">Expense Data</h3>
+                </div>
+                <p style="font-size: 13px; color: #666; margin: 0 0 12px 0;">Upload Excel with columns: Employee, Description, Amount, Category, Date</p>
+                <input type="file" id="expenseFile" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleExpenseUpload(event)">
+                <button onclick="document.getElementById('expenseFile').click()" style="width: 100%; padding: 12px; background: var(--color-warning); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                    <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px; vertical-align: middle;"></i> Choose File
+                </button>
+                <div id="expenseProgress" style="display: none; margin-top: 12px; font-size: 13px; color: #666;"></div>
+            </div>
+
+            <!-- Order Upload -->
+            <div style="background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <i data-lucide="package" style="width: 24px; height: 24px; color: var(--color-success);"></i>
+                    <h3 style="font-size: 16px; font-weight: 600; color: #000; margin: 0;">Order Data</h3>
+                </div>
+                <p style="font-size: 13px; color: #666; margin: 0 0 12px 0;">Upload Excel with columns: Order #, Buyer, Style, Quantity, FOB, Total, Date</p>
+                <input type="file" id="orderFile" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleOrderUpload(event)">
+                <button onclick="document.getElementById('orderFile').click()" style="width: 100%; padding: 12px; background: var(--color-success); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                    <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px; vertical-align: middle;"></i> Choose File
+                </button>
+                <div id="orderProgress" style="display: none; margin-top: 12px; font-size: 13px; color: #666;"></div>
+            </div>
+
+            <!-- One-Time Migration Button -->
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <i data-lucide="database" style="width: 24px; height: 24px; color: #3b82f6;"></i>
+                    <h3 style="font-size: 16px; font-weight: 600; color: #000; margin: 0;">Migrate Existing Data</h3>
+                </div>
+                <p style="font-size: 13px; color: #666; margin: 0 0 12px 0;">One-time migration: 201 attendance + 88 expense records → Supabase</p>
+                <button onclick="seedExistingData()" style="width: 100%; padding: 12px; background: #3b82f6; color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
+                    <i data-lucide="upload" style="width: 16px; height: 16px; vertical-align: middle;"></i> Migrate Now
+                </button>
+                <div id="migrationProgress" style="display: none; margin-top: 12px; font-size: 13px; color: #666;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // ===== SUPABASE CONFIGURATION =====
+        const SUPABASE_URL = 'https://jynkhlaykzcztvadvbpf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bmtobGF5a3pjenR2YWR2YnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2ODMyMjQsImV4cCI6MjA4MDI1OTIyNH0.4TKAMWSdUr1aut5CCS46FiP3RdsWMpV16xNxbvJzw2c';
+
+        let supabaseClient = null;
+        let supabaseAvailable = false;
+
+        // Initialize Lucide Icons
+        
+        // ============================================
+        // SUPABASE DATA LAYER (Same functions as employee app)
+        // ============================================
+
+        async function initializeSupabase() {
+            if (typeof window.supabase !== 'undefined') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                try {
+                    const { data, error } = await supabaseClient.from('employees').select('count');
+                    if (error) throw error;
+                    console.log('✅ Supabase connected successfully!');
+                    supabaseAvailable = true;
+                    return true;
+                } catch (e) {
+                    console.warn('⚠️ Supabase not available, falling back to localStorage');
+                    supabaseAvailable = false;
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Insert attendance to Supabase (same as employee app)
+        async function insertAttendanceToSupabase(records) {
+            if (!supabaseAvailable) return { success: false, error: 'Supabase not available' };
+            
+            try {
+                const formattedRecords = records.map(r => ({
+                    employee_name: (r.name || r.employee_name || '').toUpperCase(),
+                    date: parseDate(r.date),
+                    clock_in: r.clockIn || r.clock_in || null,
+                    clock_out: r.clockOut || r.clock_out || null,
+                    late_time: r.late || r.late_time || '',
+                    absent_type: r.absent || r.absent_type || null
+                }));
+
+                const { data, error } = await supabaseClient
+                    .from('attendance')
+                    .upsert(formattedRecords, { 
+                        onConflict: 'employee_name,date',
+                        ignoreDuplicates: false 
+                    });
+
+                if (error) throw error;
+                console.log(`✅ Inserted ${formattedRecords.length} attendance records`);
+                return { success: true, data, count: formattedRecords.length };
+            } catch (error) {
+                console.error('❌ Error inserting attendance:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function getAttendanceFromSupabase(month, year) {
+            if (!supabaseAvailable) return [];
+            
+            try {
+                let query = supabaseClient.from('attendance').select('*');
+                
+                if (month && year) {
+                    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+                    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+                    query = query.gte('date', startDate).lte('date', endDate);
+                }
+                
+                const { data, error } = await query.order('date', { ascending: false });
+                
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error fetching attendance:', error);
+                return [];
+            }
+        }
+
+        async function insertExpensesToSupabase(expenses) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const formattedExpenses = expenses.map(e => ({
+                    employee_name: e.employee || e.employee_name || null,
+                    description: e.description || '',
+                    amount: parseFloat(e.amount) || 0,
+                    category: e.category || 'Others',
+                    date: parseDate(e.date),
+                    status: e.amount < 5000 ? 'Auto-Approved' : 'Pending'
+                }));
+
+                const { data, error } = await supabaseClient
+                    .from('expenses')
+                    .insert(formattedExpenses);
+
+                if (error) throw error;
+                console.log(`✅ Inserted ${formattedExpenses.length} expenses`);
+                return { success: true, data, count: formattedExpenses.length };
+            } catch (error) {
+                console.error('❌ Error inserting expenses:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function getExpensesFromSupabase(filters = {}) {
+            if (!supabaseAvailable) return [];
+            
+            try {
+                let query = supabaseClient.from('expenses').select('*');
+                
+                if (filters.status) query = query.eq('status', filters.status);
+                if (filters.employee) query = query.eq('employee_name', filters.employee);
+                if (filters.startDate) query = query.gte('date', filters.startDate);
+                if (filters.endDate) query = query.lte('date', filters.endDate);
+                
+                const { data, error } = await query.order('date', { ascending: false });
+                
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error fetching expenses:', error);
+                return [];
+            }
+        }
+
+        async function approveExpenseInSupabase(expenseId, approvedBy = 'Boss') {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('expenses')
+                    .update({ 
+                        status: 'Approved',
+                        approved_by: approvedBy,
+                        approved_at: new Date().toISOString()
+                    })
+                    .eq('id', expenseId);
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error approving expense:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function rejectExpenseInSupabase(expenseId, reason, rejectedBy = 'Boss') {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('expenses')
+                    .update({ 
+                        status: 'Rejected',
+                        rejection_reason: reason,
+                        approved_by: rejectedBy,
+                        approved_at: new Date().toISOString()
+                    })
+                    .eq('id', expenseId);
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error rejecting expense:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function getOrdersFromSupabase(status = null) {
+            if (!supabaseAvailable) return [];
+            
+            try {
+                let query = supabaseClient.from('orders').select('*');
+                if (status) query = query.eq('status', status);
+                
+                const { data, error} = await query.order('order_date', { ascending: false });
+                
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error fetching orders:', error);
+                return [];
+            }
+        }
+
+        async function insertMessageToSupabase(message) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .insert({
+                        sender: message.sender || 'boss',
+                        content: message.content,
+                        reply_to: message.replyTo || message.reply_to || null
+                    });
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error sending message:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function getMessagesFromSupabase() {
+            if (!supabaseAvailable) return [];
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .select('*')
+                    .order('timestamp', { ascending: false });
+
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error fetching messages:', error);
+                return [];
+            }
+        }
+
+        async function markMessageAsReadInSupabase(messageId) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .update({ read: true })
+                    .eq('id', messageId);
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error marking message as read:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function insertOrdersToSupabase(orders) {
+            if (!supabaseAvailable) return { success: false, error: 'Supabase not available' };
+            
+            try {
+                const formattedOrders = orders.map(order => ({
+                    order_number: order.orderNumber,
+                    buyer: order.buyer,
+                    style: order.style || '',
+                    quantity: order.quantity || 0,
+                    fob_price: order.fobPrice || 0,
+                    total_value: order.totalValue || (order.quantity * order.fobPrice),
+                    commission_rate: order.commissionRate || 1.00,
+                    commission_amount: ((order.totalValue || (order.quantity * order.fobPrice)) * (order.commissionRate || 1.00) / 100),
+                    status: order.status || 'Pending',
+                    order_date: parseDate(order.date)
+                }));
+
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .upsert(formattedOrders, { 
+                        onConflict: 'order_number',
+                        ignoreDuplicates: false 
+                    })
+                    .select();
+
+                if (error) throw error;
+                
+                return { 
+                    success: true, 
+                    count: data?.length || 0,
+                    data 
+                };
+            } catch (error) {
+                console.error('❌ Error inserting orders:', error);
+                return { 
+                    success: false, 
+                    error: error.message 
+                };
+            }
+        }
+
+        async function updateOrderStatusInSupabase(orderId, status) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .update({ 
+                        status: status,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', orderId);
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error updating order:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function getEmployeesFromSupabase(includeLeft = false) {
+            if (!supabaseAvailable) return [];
+            
+            try {
+                let query = supabaseClient
+                    .from('employees')
+                    .select('*')
+                    .order('name', { ascending: true });
+
+                if (!includeLeft) {
+                    query = query.eq('status', 'active');
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error fetching employees:', error);
+                return [];
+            }
+        }
+
+        async function updateEmployeeInSupabase(employeeId, updates) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('employees')
+                    .update({
+                        ...updates,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', employeeId);
+
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('❌ Error updating employee:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function insertEmployeeToSupabase(employee) {
+            if (!supabaseAvailable) return { success: false };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('employees')
+                    .insert({
+                        name: employee.name,
+                        department: employee.department || '',
+                        shift: employee.shift || 'Second Shift',
+                        monthly_salary: employee.monthlySalary || employee.monthly_salary || 0,
+                        status: employee.status || 'active'
+                    })
+                    .select();
+
+                if (error) throw error;
+                return { success: true, data: data[0] };
+            } catch (error) {
+                console.error('❌ Error inserting employee:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function calculateSalaryFromSupabase(employeeName, month, year) {
+            if (!supabaseAvailable) return null;
+            
+            try {
+                // Get employee details
+                const { data: employee, error: empError } = await supabaseClient
+                    .from('employees')
+                    .select('*')
+                    .eq('name', employeeName)
+                    .single();
+
+                if (empError) throw empError;
+
+                // Get attendance for the month
+                const { data: attendance, error: attError } = await supabaseClient
+                    .from('attendance')
+                    .select('*')
+                    .eq('employee_name', employeeName)
+                    .gte('date', `${year}-${String(month).padStart(2, '0')}-01`)
+                    .lt('date', month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`);
+
+                if (attError) throw attError;
+
+                // Calculate metrics
+                const lateDays = attendance.filter(a => a.is_late).length;
+                const ulDays = attendance.filter(a => a.absent_type === 'UL').length;
+                const alDays = attendance.filter(a => a.absent_type === 'AL').length;
+                const earlyLeaveDays = attendance.filter(a => a.is_early_leave).length;
+
+                const baseSalary = employee.monthly_salary || 0;
+                const dailySalary = baseSalary / 26; // 26 working days per month
+                
+                // Late deduction: every 3 late days = 1 day deduction
+                const lateDeduction = Math.floor(lateDays / 3) * dailySalary;
+                
+                // UL deduction: full day for each UL
+                const ulDeduction = ulDays * dailySalary;
+                
+                const netSalary = baseSalary - lateDeduction - ulDeduction;
+
+                // Insert/update salary record
+                const salaryRecord = {
+                    employee_name: employeeName,
+                    month: `${year}-${String(month).padStart(2, '0')}-01`,
+                    base_salary: baseSalary,
+                    late_days: lateDays,
+                    late_deduction: lateDeduction,
+                    ul_days: ulDays,
+                    ul_deduction: ulDeduction,
+                    al_days: alDays,
+                    early_leave_days: earlyLeaveDays,
+                    bonus: 0,
+                    net_salary: netSalary,
+                    status: 'Pending'
+                };
+
+                const { data: salaryData, error: salError } = await supabaseClient
+                    .from('salary')
+                    .upsert(salaryRecord, {
+                        onConflict: 'employee_name,month'
+                    })
+                    .select();
+
+                if (salError) throw salError;
+
+                return salaryData[0];
+            } catch (error) {
+                console.error('❌ Error calculating salary:', error);
+                return null;
+            }
+        }
+
+        // Parse date helper
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                return dateStr;
+            }
+            
+            if (/^\d{2}-[A-Za-z]{3}-\d{2}$/.test(dateStr)) {
+                const [day, monthStr, year] = dateStr.split('-');
+                const monthMap = {
+                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                };
+                const fullYear = `20${year}`;
+                return `${fullYear}-${monthMap[monthStr]}-${day}`;
+            }
+            
+            try {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString().split('T')[0];
+                }
+            } catch (e) {
+                console.warn('Could not parse date:', dateStr);
+            }
+            
+            return null;
+        }
+
+        // ============================================
+        // DATA MIGRATION FUNCTIONS
+        // ============================================
+
+        async function seedExistingDataToSupabase() {
+            if (!supabaseAvailable) {
+                console.warn('⚠️ Supabase not available for data migration');
+                return { success: false, error: 'Supabase not available' };
+            }
+
+            // Check if migration already done
+            const migrationDone = localStorage.getItem('indigoDataMigrated');
+            if (migrationDone === 'true') {
+                console.log('✓ Data already migrated to Supabase');
+                return { success: true, alreadyDone: true };
+            }
+
+            console.log('🔄 Starting data migration to Supabase...');
+            
+            try {
+                // Migrate 201 attendance records
+                console.log('📊 Migrating attendance data...');
+                const attendanceResult = await insertAttendanceToSupabase(excelAttendanceDataFallback);
+                console.log(`✅ Migrated ${attendanceResult.count} attendance records`);
+
+                // Mark migration as complete
+                localStorage.setItem('indigoDataMigrated', 'true');
+                
+                console.log('✅ Data migration complete!');
+                return { 
+                    success: true, 
+                    attendance: attendanceResult.count
+                };
+            } catch (error) {
+                console.error('❌ Error during data migration:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Auto-migrate on first load if Supabase is available
+        window.addEventListener('load', async () => {
+            if (supabaseAvailable) {
+                const migrationResult = await seedExistingDataToSupabase();
+                if (migrationResult.success && !migrationResult.alreadyDone) {
+                    showNotification(`✅ Migrated ${migrationResult.attendance} attendance records to Supabase`);
+                }
+            }
+        });
+
+        // ============================================
+        // END SUPABASE DATA LAYER
+        // ============================================
+        
+        // ============================================
+        // EXCEL UPLOAD & PARSER FUNCTIONS
+        // ============================================
+
+        // Open/Close upload modal
+        function openUploadModal() {
+            document.getElementById('uploadModal').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+        }
+
+        // Show upload status
+        function showUploadStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}" 
+                       style="width: 18px; height: 18px;"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            statusDiv.style.background = type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 
+                                         type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 
+                                         'rgba(59, 130, 246, 0.1)';
+            statusDiv.style.color = type === 'success' ? '#10b981' : 
+                                    type === 'error' ? '#ef4444' : '#3b82f6';
+            statusDiv.style.border = type === 'success' ? '1px solid rgba(16, 185, 129, 0.3)' : 
+                                    type === 'error' ? '1px solid rgba(239, 68, 68, 0.3)' : 
+                                    '1px solid rgba(59, 130, 246, 0.3)';
+            lucide.createIcons();
+        }
+
+        // Handle Attendance Excel Upload
+        async function handleAttendanceUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const progress = document.getElementById('attendanceProgress');
+            progress.style.display = 'block';
+            progress.textContent = '📂 Reading file...';
+
+            try {
+                const data = await readExcelFile(file);
+                progress.textContent = `✓ Found ${data.length} records. Parsing...`;
+
+                const attendanceRecords = data.map(row => ({
+                    name: row['Name'] || row['name'] || row['Employee'] || '',
+                    date: row['Date'] || row['date'] || '',
+                    clockIn: row['Clock In'] || row['clock_in'] || row['ClockIn'] || '',
+                    clockOut: row['Clock Out'] || row['clock_out'] || row['ClockOut'] || '',
+                    late: row['Late'] || row['late'] || '',
+                    absent: row['Absent'] || row['absent'] || ''
+                })).filter(r => r.name && r.date);
+
+                progress.textContent = `✓ Parsed ${attendanceRecords.length} records. Uploading to Supabase...`;
+
+                const result = await insertAttendanceToSupabase(attendanceRecords);
+
+                if (result.success) {
+                    progress.textContent = `✅ Success! Uploaded ${result.count} records`;
+                    progress.style.color = '#10b981';
+                    showUploadStatus(`✅ Uploaded ${result.count} attendance records to Supabase!`, 'success');
+                    
+                    // Update dashboard
+                    setTimeout(() => {
+                        updateBusinessHealth();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                progress.textContent = `❌ Error: ${error.message}`;
+                progress.style.color = '#ef4444';
+                showUploadStatus(`❌ Upload failed: ${error.message}`, 'error');
+            }
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // Handle Expense Excel Upload
+        async function handleExpenseUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const progress = document.getElementById('expenseProgress');
+            progress.style.display = 'block';
+            progress.textContent = '📂 Reading file...';
+
+            try {
+                const data = await readExcelFile(file);
+                progress.textContent = `✓ Found ${data.length} records. Parsing...`;
+
+                const expenseRecords = data.map(row => ({
+                    employee: row['Employee'] || row['employee'] || row['Name'] || '',
+                    description: row['Description'] || row['description'] || '',
+                    amount: parseFloat(row['Amount'] || row['amount'] || 0),
+                    category: row['Category'] || row['category'] || 'Others',
+                    date: row['Date'] || row['date'] || ''
+                })).filter(r => r.description && r.amount);
+
+                progress.textContent = `✓ Parsed ${expenseRecords.length} records. Uploading to Supabase...`;
+
+                const result = await insertExpensesToSupabase(expenseRecords);
+
+                if (result.success) {
+                    progress.textContent = `✅ Success! Uploaded ${result.count} records`;
+                    progress.style.color = '#10b981';
+                    showUploadStatus(`✅ Uploaded ${result.count} expense records to Supabase!`, 'success');
+                    
+                    setTimeout(() => {
+                        updateBusinessHealth();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                progress.textContent = `❌ Error: ${error.message}`;
+                progress.style.color = '#ef4444';
+                showUploadStatus(`❌ Upload failed: ${error.message}`, 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        // Handle Order Excel Upload
+        async function handleOrderUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const progress = document.getElementById('orderProgress');
+            progress.style.display = 'block';
+            progress.textContent = '📂 Reading file...';
+
+            try {
+                const data = await readExcelFile(file);
+                progress.textContent = `✓ Found ${data.length} records. Parsing...`;
+
+                const orderRecords = data.map(row => ({
+                    orderNumber: row['Order #'] || row['OrderNumber'] || row['order_number'] || '',
+                    buyer: row['Buyer'] || row['buyer'] || '',
+                    style: row['Style'] || row['style'] || '',
+                    quantity: parseInt(row['Quantity'] || row['quantity'] || 0),
+                    fobPrice: parseFloat(row['FOB'] || row['fob'] || row['FOB Price'] || 0),
+                    totalValue: parseFloat(row['Total'] || row['total'] || row['Total Value'] || 0),
+                    date: row['Date'] || row['date'] || ''
+                })).filter(r => r.orderNumber && r.buyer);
+
+                progress.textContent = `✓ Parsed ${orderRecords.length} records. Uploading to Supabase...`;
+
+                const result = await insertOrdersToSupabase(orderRecords);
+
+                if (result.success) {
+                    progress.textContent = `✅ Success! Uploaded ${result.count} records`;
+                    progress.style.color = '#10b981';
+                    showUploadStatus(`✅ Uploaded ${result.count} order records to Supabase!`, 'success');
+                    
+                    setTimeout(() => {
+                        updateOrdersBadge();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                progress.textContent = `❌ Error: ${error.message}`;
+                progress.style.color = '#ef4444';
+                showUploadStatus(`❌ Upload failed: ${error.message}`, 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        // Read Excel file using SheetJS
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    reject(error);
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Migrate existing hardcoded data to Supabase (one-time)
+        async function seedExistingData() {
+            const progress = document.getElementById('migrationProgress');
+            progress.style.display = 'block';
+            progress.textContent = '🔄 Starting migration...';
+
+            try {
+                // Check if already migrated
+                const migrated = localStorage.getItem('indigoDataMigrated');
+                if (migrated === 'true') {
+                    if (!confirm('Data has already been migrated. Migrate again? This may create duplicates.')) {
+                        progress.textContent = '⚠️ Migration cancelled';
+                        return;
+                    }
+                }
+
+                // Migrate attendance (201 records from excelAttendanceDataFallback)
+                progress.textContent = '📊 Migrating 201 attendance records...';
+                const attendanceResult = await insertAttendanceToSupabase(excelAttendanceData);
+                
+                if (!attendanceResult.success) {
+                    throw new Error('Attendance migration failed: ' + attendanceResult.error);
+                }
+
+                // Migrate expenses (88 records from dailyExpenses)
+                progress.textContent = '💰 Migrating 88 expense records...';
+                const expenseResult = await insertExpensesToSupabase(dailyExpenses);
+                
+                if (!expenseResult.success) {
+                    throw new Error('Expense migration failed: ' + expenseResult.error);
+                }
+
+                // Mark as migrated
+                localStorage.setItem('indigoDataMigrated', 'true');
+
+                progress.textContent = `✅ Migration complete! ${attendanceResult.count || 0} attendance + ${expenseResult.count || 0} expenses migrated`;
+                progress.style.color = '#10b981';
+                showUploadStatus('✅ All existing data migrated to Supabase successfully!', 'success');
+
+                // Update dashboard
+                setTimeout(() => {
+                    updateBusinessHealth();
+                }, 1000);
+
+            } catch (error) {
+                progress.textContent = `❌ Migration failed: ${error.message}`;
+                progress.style.color = '#ef4444';
+                showUploadStatus(`❌ Migration failed: ${error.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // END EXCEL UPLOAD FUNCTIONS
+        // ============================================
+        
+        // ============================================
+        // LOCALSTORAGE HELPER FUNCTIONS
+        // ============================================
+        
+        // Get all expenses from localStorage
+        function getExpensesFromStorage() {
+            const stored = localStorage.getItem('indigoExpenses');
+            return stored ? JSON.parse(stored) : [];
+        }
+        
+        // ============================================
+        // MESSAGING SYSTEM
+        // ============================================
+        
+        // Get all messages
+        function getMessages() {
+            const stored = localStorage.getItem('indigoMessages');
+            return stored ? JSON.parse(stored) : [];
+        }
+        
+        // Save message
+        function saveMessage(message) {
+            const messages = getMessages();
+            messages.push(message);
+            localStorage.setItem('indigoMessages', JSON.stringify(messages));
+        }
+        
+        // Get unread replies count
+        function getUnreadRepliesCount() {
+            const messages = getMessages();
+            return messages.filter(m => m.to === 'boss' && !m.read).length;
+        }
+        
+        // Mark reply as read
+        function markReplyAsRead(messageId) {
+            const messages = getMessages();
+            const message = messages.find(m => m.id === messageId);
+            if (message) {
+                message.read = true;
+                localStorage.setItem('indigoMessages', JSON.stringify(messages));
+            }
+        }
+        
+        // Save or update expense in localStorage
+        function saveExpenseToStorage(expense) {
+            const expenses = getExpensesFromStorage();
+            const existingIndex = expenses.findIndex(e => e.id === expense.id);
+            
+            if (existingIndex !== -1) {
+                expenses[existingIndex] = expense;
+            } else {
+                expenses.push(expense);
+            }
+            
+            localStorage.setItem('indigoExpenses', JSON.stringify(expenses));
+        }
+        
+        // Get boss notifications (unviewed by default)
+        function getBossNotifications(includeViewed = false) {
+            const stored = localStorage.getItem('indigoBossNotifications');
+            const all = stored ? JSON.parse(stored) : [];
+            return includeViewed ? all : all.filter(n => !n.viewed);
+        }
+        
+        // Mark boss notification as viewed (auto-clear)
+        function markBossNotificationViewed(expenseId) {
+            const notifications = getBossNotifications(true); // Get all
+            const notification = notifications.find(n => n.expenseId === expenseId);
+            if (notification) {
+                notification.viewed = true;
+                localStorage.setItem('indigoBossNotifications', JSON.stringify(notifications));
+            }
+        }
+        
+        // Mark all boss notifications as viewed
+        function markAllBossNotificationsViewed() {
+            const notifications = getBossNotifications(true);
+            notifications.forEach(n => n.viewed = true);
+            localStorage.setItem('indigoBossNotifications', JSON.stringify(notifications));
+        }
+        
+        // Create rejection notification for Ritu
+        function saveRejectionNotification(notification) {
+            const stored = localStorage.getItem('indigoNotifications');
+            const notifications = stored ? JSON.parse(stored) : [];
+            notifications.push(notification);
+            localStorage.setItem('indigoNotifications', JSON.stringify(notifications));
+        }
+        
+        // ============================================
+        // INDIGODESK DATA MODEL - Buying House Operations
+        // ============================================
+        
+        // ============================================
+        // SHIFT ASSIGNMENT CONFIGURATION
+        // ============================================
+        const FIRST_SHIFT_EMPLOYEES = ["Ritu", "Shila", "Arnab", "Badiul"];
+        const FIRST_SHIFT_START = { hour: 9, minute: 0 }; // 9:00 AM
+        const FIRST_SHIFT_END = { hour: 19, minute: 0 }; // 7:00 PM
+        const SECOND_SHIFT_START = { hour: 10, minute: 30 }; // 10:30 AM
+        const SECOND_SHIFT_END = { hour: 20, minute: 30 }; // 8:30 PM
+        const GRACE_PERIOD_MINUTES = 15;
+        
+        // Helper: Get employee shift (1 = First Shift, 2 = Second Shift)
+        function getEmployeeShift(employeeName) {
+            return FIRST_SHIFT_EMPLOYEES.includes(employeeName) ? 1 : 2;
+        }
+        
+        // Helper: Check if employee is late based on clock-in time and shift
+        function isLate(clockInTime, employeeName) {
+            if (!clockInTime) return false;
+            
+            const shift = getEmployeeShift(employeeName);
+            const clockIn = new Date(clockInTime);
+            const clockInHour = clockIn.getHours();
+            const clockInMinute = clockIn.getMinutes();
+            
+            if (shift === 1) {
+                // First Shift: Late if > 9:15 AM
+                const lateTime = FIRST_SHIFT_START.hour * 60 + FIRST_SHIFT_START.minute + GRACE_PERIOD_MINUTES;
+                const clockInMinutes = clockInHour * 60 + clockInMinute;
+                return clockInMinutes > lateTime;
+            } else {
+                // Second Shift: Late if > 10:45 AM
+                const lateTime = SECOND_SHIFT_START.hour * 60 + SECOND_SHIFT_START.minute + GRACE_PERIOD_MINUTES;
+                const clockInMinutes = clockInHour * 60 + clockInMinute;
+                return clockInMinutes > lateTime;
+            }
+        }
+        
+        // Helper: Check if employee left early
+        function isEarlyLeave(clockOutTime, employeeName) {
+            if (!clockOutTime) return false;
+            
+            const shift = getEmployeeShift(employeeName);
+            const clockOut = new Date(clockOutTime);
+            const clockOutHour = clockOut.getHours();
+            const clockOutMinute = clockOut.getMinutes();
+            
+            if (shift === 1) {
+                // First Shift: Early if < 7:00 PM
+                const shiftEndMinutes = FIRST_SHIFT_END.hour * 60 + FIRST_SHIFT_END.minute;
+                const clockOutMinutes = clockOutHour * 60 + clockOutMinute;
+                return clockOutMinutes < shiftEndMinutes;
+            } else {
+                // Second Shift: Early if < 8:30 PM
+                const shiftEndMinutes = SECOND_SHIFT_END.hour * 60 + SECOND_SHIFT_END.minute;
+                const clockOutMinutes = clockOutHour * 60 + clockOutMinute;
+                return clockOutMinutes < shiftEndMinutes;
+            }
+        }
+        
+        // Helper: Calculate late deduction (3 late days = 1 day salary)
+        function calculateLateDeduction(employee, attendanceRecords, month) {
+            const monthRecords = attendanceRecords.filter(r => {
+                const recordDate = new Date(r.date);
+                return recordDate.getMonth() === month.getMonth() && 
+                       recordDate.getFullYear() === month.getFullYear() &&
+                       r.employeeId === employee.id;
+            });
+            
+            const lateDays = monthRecords.filter(r => {
+                if (r.status === "Late") return true;
+                if (r.clockInTime && isLate(r.clockInTime, employee.name)) return true;
+                return false;
+            }).length;
+            
+            const daysDeducted = Math.floor(lateDays / 3);
+            const dailySalary = employee.monthlySalary / employee.workingDaysInMonth;
+            return daysDeducted * dailySalary;
+        }
+
+        // ============================================
+        // REAL EMPLOYEE DATA FROM EXCEL (Salary Sheet October 2025)
+        // ============================================
+        const employees = [
+            { id: 1, name: "Sheikh Shaheenul Islam", role: "CEO", department: "Management", monthlySalary: 175000, workingDaysInMonth: 26, status: "active" },
+            { id: 2, name: "Abeda Sultana", role: "Director", department: "Management", monthlySalary: 75000, workingDaysInMonth: 26, status: "active" },
+            { id: 3, name: "Md.Bodiul Alam", role: "General Manager", department: "Management", monthlySalary: 100000, workingDaysInMonth: 26, status: "active" },
+            { id: 4, name: "Md.Maidul Islam Shyamol", role: "AGM(Quality and Production)", department: "Quality", monthlySalary: 100000, workingDaysInMonth: 26, status: "active" },
+            { id: 5, name: "S.M Abul Kalam Azad", role: "Merchandising Manager(Woven)", department: "Merchandising", monthlySalary: 85000, workingDaysInMonth: 26, status: "active" },
+            { id: 6, name: "Md.Sabbir Ali", role: "Jr.Merchandising Manager", department: "Merchandising", monthlySalary: 70000, workingDaysInMonth: 26, status: "active" },
+            { id: 7, name: "A.K.Azad", role: "Asst.Manager", department: "Admin", monthlySalary: 65000, workingDaysInMonth: 26, status: "active" },
+            { id: 8, name: "Sharif Hossain Sumon", role: "Sr.Merchandiser", department: "Merchandising", monthlySalary: 50000, workingDaysInMonth: 26, status: "active" },
+            { id: 9, name: "Naznin Afroj Ritu", role: "Officer(Acct,Commercial,Admin and HR)", department: "HR", monthlySalary: 26000, workingDaysInMonth: 26, status: "active" },
+            { id: 10, name: "Raju Sheikh", role: "Asst.Merchandiser", department: "Merchandising", monthlySalary: 35000, workingDaysInMonth: 26, status: "active" },
+            { id: 11, name: "Nazmun Naher Shila", role: "Trainee Merchandiser", department: "Merchandising", monthlySalary: 18500, workingDaysInMonth: 26, status: "active" },
+            { id: 12, name: "Md.Mizanur Rahman", role: "Quality Controller", department: "Quality", monthlySalary: 46000, workingDaysInMonth: 26, status: "active" },
+            { id: 13, name: "Md.Badiuzzaman", role: "Quality Controller", department: "Quality", monthlySalary: 41000, workingDaysInMonth: 26, status: "active" },
+            { id: 14, name: "Md.Nahid Hasan", role: "Quality Controller", department: "Quality", monthlySalary: 45000, workingDaysInMonth: 26, status: "active" },
+            { id: 15, name: "Arnab Ghosh", role: "Executive", department: "Admin", monthlySalary: 15500, workingDaysInMonth: 26, status: "active" },
+            { id: 16, name: "Md.Akizur Rahman", role: "Executive", department: "Admin", monthlySalary: 13000, workingDaysInMonth: 26, status: "active" },
+            { id: 17, name: "Md.Joynal Abedin", role: "Driver", department: "Admin", monthlySalary: 25000, workingDaysInMonth: 26, status: "active" },
+            { id: 18, name: "Md.Nayem", role: "Office Assistant", department: "Admin", monthlySalary: 13000, workingDaysInMonth: 26, status: "active" },
+            { id: 19, name: "Mr.Ranu", role: "Cleaner", department: "Admin", monthlySalary: 6000, workingDaysInMonth: 26, status: "active" },
+            { id: 20, name: "Jamal Hossain", role: "Office Supervisor", department: "Admin", monthlySalary: 16000, workingDaysInMonth: 26, status: "active" },
+            { id: 21, name: "Rafiqul Islam", role: "Caretaker", department: "Admin", monthlySalary: 14000, workingDaysInMonth: 26, status: "active" }
+        ];
+
+        // ============================================
+        // GOOGLE SHEETS CSV URL - LIVE ATTENDANCE DATA
+        // ============================================
+        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMm23_67nLqy0u2aF-gynkDbxrtxD620so2EJW_1nsfnmWTQlzbnt3BQc1Cmmo2w/pub?gid=151875332&single=true&output=csv';
+        
+        // Function to fetch and parse CSV from Google Sheets
+        async function fetchAttendanceFromGoogleSheets() {
+            try {
+                const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                const csvText = await response.text();
+                
+                // Parse CSV
+                const lines = csvText.split('\n');
+                const attendanceData = [];
+                
+                // Skip header row (first line)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue; // Skip empty lines
+                    
+                    const values = line.split(',');
+                    if (values.length >= 6) {
+                        attendanceData.push({
+                            name: values[0].trim(),
+                            date: values[1].trim(),
+                            clockIn: values[2].trim(),
+                            clockOut: values[3].trim(),
+                            late: values[4].trim(),
+                            absent: values[5].trim()
+                        });
+                    }
+                }
+                
+                console.log(`✅ Fetched ${attendanceData.length} attendance records from Google Sheets`);
+                return attendanceData;
+            } catch (error) {
+                console.error('❌ Error fetching from Google Sheets:', error);
+                // Return fallback data if fetch fails
+                return excelAttendanceDataFallback;
+            }
+        }
+        
+        // ============================================
+        // FALLBACK DATA (if Google Sheets fails)
+        // ============================================
+        const excelAttendanceDataFallback = [
+            { name: "RITU", date: "03-Nov-25", clockIn: "09:02", clockOut: "", late: "", absent: "" },
+            { name: "RITU", date: "05-Nov-25", clockIn: "09:10", clockOut: "19:04", late: "", absent: "" },
+            { name: "RITU", date: "06-Nov-25", clockIn: "09:02", clockOut: "20:19", late: "", absent: "" },
+            { name: "RITU", date: "07-Nov-25", clockIn: "09:10", clockOut: "19:01", late: "", absent: "" },
+            { name: "RITU", date: "08-Nov-25", clockIn: "09:04", clockOut: "19:02", late: "", absent: "" },
+            { name: "RITU", date: "10-Nov-25", clockIn: "08:58", clockOut: "19:21", late: "", absent: "" },
+            { name: "RITU", date: "11-Nov-25", clockIn: "08:48", clockOut: "18:54", late: "", absent: "" },
+            { name: "RITU", date: "12-Nov-25", clockIn: "09:03", clockOut: "18:53", late: "", absent: "" },
+            { name: "RITU", date: "13-Nov-25", clockIn: "09:00", clockOut: "19:11", late: "", absent: "" },
+            { name: "RITU", date: "15-Nov-25", clockIn: "09:02", clockOut: "19:19", late: "", absent: "" },
+            { name: "RITU", date: "17-Nov-25", clockIn: "08:51", clockOut: "18:47", late: "", absent: "" },
+            { name: "RITU", date: "18-Nov-25", clockIn: "08:57", clockOut: "17:49", late: "", absent: "" },
+            { name: "RITU", date: "19-Nov-25", clockIn: "08:51", clockOut: "20:33", late: "", absent: "" },
+            { name: "RITU", date: "20-Nov-25", clockIn: "08:55", clockOut: "18:28", late: "", absent: "" },
+            { name: "RITU", date: "21-Nov-25", clockIn: "08:59", clockOut: "19:06", late: "", absent: "" },
+            { name: "RITU", date: "22-Nov-25", clockIn: "08:56", clockOut: "17:07", late: "", absent: "" },
+            { name: "RITU", date: "25-Nov-25", clockIn: "09:07", clockOut: "19:05", late: "", absent: "" },
+            { name: "RITU", date: "26-Nov-25", clockIn: "09:03", clockOut: "18:55", late: "", absent: "" },
+            { name: "RITU", date: "27-Nov-25", clockIn: "09:03", clockOut: "18:58", late: "", absent: "" },
+            { name: "RITU", date: "28-Nov-25", clockIn: "08:56", clockOut: "19:03", late: "", absent: "" },
+            { name: "RITU", date: "29-Nov-25", clockIn: "09:06", clockOut: "19:29", late: "", absent: "" },
+            { name: "AZAD", date: "01-Nov-25", clockIn: "09:25", clockOut: "19:24", late: "00:10", absent: "" },
+            { name: "AZAD", date: "03-Nov-25", clockIn: "10:47", clockOut: "20:13", late: "01:32", absent: "" },
+            { name: "AZAD", date: "04-Nov-25", clockIn: "10:37", clockOut: "20:16", late: "01:22", absent: "" },
+            { name: "AZAD", date: "05-Nov-25", clockIn: "10:28", clockOut: "20:25", late: "01:13", absent: "" },
+            { name: "AZAD", date: "06-Nov-25", clockIn: "10:42", clockOut: "20:22", late: "01:27", absent: "" },
+            { name: "AZAD", date: "08-Nov-25", clockIn: "09:13", clockOut: "19:33", late: "", absent: "" },
+            { name: "AZAD", date: "10-Nov-25", clockIn: "09:42", clockOut: "", late: "00:27", absent: "" },
+            { name: "AZAD", date: "11-Nov-25", clockIn: "10:25", clockOut: "20:13", late: "01:10", absent: "" },
+            { name: "AZAD", date: "12-Nov-25", clockIn: "10:20", clockOut: "20:08", late: "01:05", absent: "" },
+            { name: "AZAD", date: "13-Nov-25", clockIn: "09:08", clockOut: "19:28", late: "", absent: "" },
+            { name: "AZAD", date: "14-Nov-25", clockIn: "10:24", clockOut: "", late: "01:09", absent: "" },
+            { name: "AZAD", date: "17-Nov-25", clockIn: "10:31", clockOut: "20:12", late: "01:16", absent: "" },
+            { name: "AZAD", date: "18-Nov-25", clockIn: "10:18", clockOut: "", late: "01:03", absent: "" },
+            { name: "AZAD", date: "20-Nov-25", clockIn: "11:14", clockOut: "", late: "01:59", absent: "" },
+            { name: "AZAD", date: "22-Nov-25", clockIn: "09:48", clockOut: "18:58", late: "00:33", absent: "" },
+            { name: "AZAD", date: "24-Nov-25", clockIn: "10:37", clockOut: "21:37", late: "01:22", absent: "" },
+            { name: "AZAD", date: "25-Nov-25", clockIn: "09:26", clockOut: "21:27", late: "00:11", absent: "" },
+            { name: "AZAD", date: "26-Nov-25", clockIn: "10:21", clockOut: "", late: "01:06", absent: "" },
+            { name: "AZAD", date: "28-Nov-25", clockIn: "10:33", clockOut: "20:33", late: "01:18", absent: "" },
+            { name: "AZAD", date: "29-Nov-25", clockIn: "10:00", clockOut: "18:40", late: "00:45", absent: "" },
+            { name: "SABBIR", date: "01-Nov-25", clockIn: "08:53", clockOut: "18:58", late: "", absent: "" },
+            { name: "SABBIR", date: "03-Nov-25", clockIn: "10:36", clockOut: "", late: "01:21", absent: "" },
+            { name: "SABBIR", date: "05-Nov-25", clockIn: "12:10", clockOut: "", late: "02:55", absent: "" },
+            { name: "SABBIR", date: "07-Nov-25", clockIn: "10:25", clockOut: "20:24", late: "01:10", absent: "" },
+            { name: "SABBIR", date: "08-Nov-25", clockIn: "08:56", clockOut: "19:45", late: "", absent: "" },
+            { name: "SABBIR", date: "10-Nov-25", clockIn: "10:45", clockOut: "20:43", late: "01:30", absent: "" },
+            { name: "SABBIR", date: "11-Nov-25", clockIn: "10:22", clockOut: "20:32", late: "01:07", absent: "" },
+            { name: "SABBIR", date: "12-Nov-25", clockIn: "10:38", clockOut: "20:08", late: "01:23", absent: "" },
+            { name: "SABBIR", date: "13-Nov-25", clockIn: "08:40", clockOut: "20:11", late: "", absent: "" },
+            { name: "SABBIR", date: "14-Nov-25", clockIn: "10:19", clockOut: "20:39", late: "01:04", absent: "" },
+            { name: "SABBIR", date: "15-Nov-25", clockIn: "09:01", clockOut: "", late: "", absent: "" },
+            { name: "SABBIR", date: "18-Nov-25", clockIn: "10:08", clockOut: "", late: "00:53", absent: "" },
+            { name: "SABBIR", date: "20-Nov-25", clockIn: "11:11", clockOut: "20:23", late: "01:56", absent: "" },
+            { name: "SABBIR", date: "22-Nov-25", clockIn: "09:28", clockOut: "18:56", late: "00:13", absent: "" },
+            { name: "SABBIR", date: "25-Nov-25", clockIn: "10:17", clockOut: "20:39", late: "01:02", absent: "" },
+            { name: "SABBIR", date: "26-Nov-25", clockIn: "10:18", clockOut: "", late: "01:03", absent: "" },
+            { name: "SABBIR", date: "28-Nov-25", clockIn: "10:19", clockOut: "", late: "01:04", absent: "" },
+            { name: "KALAM", date: "01-Nov-25", clockIn: "09:18", clockOut: "18:58", late: "", absent: "" },
+            { name: "KALAM", date: "03-Nov-25", clockIn: "10:22", clockOut: "20:16", late: "01:07", absent: "" },
+            { name: "KALAM", date: "04-Nov-25", clockIn: "10:29", clockOut: "20:28", late: "01:14", absent: "" },
+            { name: "KALAM", date: "05-Nov-25", clockIn: "10:27", clockOut: "20:24", late: "01:12", absent: "" },
+            { name: "KALAM", date: "06-Nov-25", clockIn: "10:43", clockOut: "16:57", late: "01:28", absent: "" },
+            { name: "KALAM", date: "07-Nov-25", clockIn: "10:30", clockOut: "20:24", late: "01:15", absent: "" },
+            { name: "KALAM", date: "08-Nov-25", clockIn: "09:07", clockOut: "19:46", late: "", absent: "" },
+            { name: "KALAM", date: "10-Nov-25", clockIn: "10:35", clockOut: "20:41", late: "01:20", absent: "" },
+            { name: "KALAM", date: "11-Nov-25", clockIn: "10:32", clockOut: "20:32", late: "01:17", absent: "" },
+            { name: "KALAM", date: "12-Nov-25", clockIn: "10:27", clockOut: "20:09", late: "01:12", absent: "" },
+            { name: "KALAM", date: "13-Nov-25", clockIn: "09:07", clockOut: "20:11", late: "", absent: "" },
+            { name: "KALAM", date: "14-Nov-25", clockIn: "10:34", clockOut: "20:39", late: "01:19", absent: "" },
+            { name: "KALAM", date: "15-Nov-25", clockIn: "09:16", clockOut: "", late: "", absent: "" },
+            { name: "KALAM", date: "18-Nov-25", clockIn: "10:26", clockOut: "20:25", late: "01:11", absent: "" },
+            { name: "KALAM", date: "19-Nov-25", clockIn: "10:27", clockOut: "20:34", late: "01:12", absent: "" },
+            { name: "KALAM", date: "20-Nov-25", clockIn: "10:25", clockOut: "20:23", late: "01:10", absent: "" },
+            { name: "KALAM", date: "21-Nov-25", clockIn: "10:48", clockOut: "20:32", late: "01:33", absent: "" },
+            { name: "KALAM", date: "22-Nov-25", clockIn: "09:30", clockOut: "18:57", late: "00:15", absent: "" },
+            { name: "KALAM", date: "24-Nov-25", clockIn: "10:29", clockOut: "20:34", late: "01:14", absent: "" },
+            { name: "KALAM", date: "25-Nov-25", clockIn: "10:25", clockOut: "20:39", late: "01:10", absent: "" },
+            { name: "KALAM", date: "27-Nov-25", clockIn: "10:25", clockOut: "20:24", late: "01:10", absent: "" },
+            { name: "KALAM", date: "29-Nov-25", clockIn: "09:29", clockOut: "19:30", late: "00:14", absent: "" },
+            { name: "SHARIF", date: "01-Nov-25", clockIn: "08:22", clockOut: "17:34", late: "", absent: "" },
+            { name: "SHARIF", date: "03-Nov-25", clockIn: "10:31", clockOut: "20:16", late: "01:16", absent: "" },
+            { name: "SHARIF", date: "04-Nov-25", clockIn: "10:17", clockOut: "20:40", late: "01:02", absent: "" },
+            { name: "SHARIF", date: "05-Nov-25", clockIn: "10:14", clockOut: "19:14", late: "00:59", absent: "" },
+            { name: "SHARIF", date: "06-Nov-25", clockIn: "10:37", clockOut: "21:36", late: "01:22", absent: "" },
+            { name: "SHARIF", date: "07-Nov-25", clockIn: "08:59", clockOut: "22:55", late: "", absent: "" },
+            { name: "SHARIF", date: "10-Nov-25", clockIn: "10:09", clockOut: "20:59", late: "00:54", absent: "" },
+            { name: "SHARIF", date: "11-Nov-25", clockIn: "10:21", clockOut: "20:40", late: "01:06", absent: "" },
+            { name: "SHARIF", date: "12-Nov-25", clockIn: "10:18", clockOut: "20:39", late: "01:03", absent: "" },
+            { name: "SHARIF", date: "13-Nov-25", clockIn: "08:18", clockOut: "", late: "", absent: "" },
+            { name: "SHARIF", date: "15-Nov-25", clockIn: "09:00", clockOut: "", late: "", absent: "" },
+            { name: "SHARIF", date: "18-Nov-25", clockIn: "10:28", clockOut: "20:25", late: "01:13", absent: "" },
+            { name: "SHARIF", date: "19-Nov-25", clockIn: "09:47", clockOut: "19:07", late: "00:32", absent: "" },
+            { name: "SHARIF", date: "21-Nov-25", clockIn: "10:31", clockOut: "21:30", late: "01:16", absent: "" },
+            { name: "SHARIF", date: "22-Nov-25", clockIn: "08:09", clockOut: "", late: "", absent: "" },
+            { name: "SHARIF", date: "25-Nov-25", clockIn: "08:53", clockOut: "19:02", late: "", absent: "" },
+            { name: "SHARIF", date: "26-Nov-25", clockIn: "10:21", clockOut: "22:43", late: "01:06", absent: "" },
+            { name: "SHARIF", date: "27-Nov-25", clockIn: "10:18", clockOut: "22:41", late: "01:03", absent: "" },
+            { name: "SHARIF", date: "28-Nov-25", clockIn: "08:28", clockOut: "22:07", late: "", absent: "" },
+            { name: "SHARIF", date: "29-Nov-25", clockIn: "08:01", clockOut: "", late: "", absent: "" },
+            { name: "NAYEM", date: "01-Nov-25", clockIn: "09:18", clockOut: "19:01", late: "", absent: "" },
+            { name: "NAYEM", date: "04-Nov-25", clockIn: "09:04", clockOut: "", late: "", absent: "" },
+            { name: "NAYEM", date: "11-Nov-25", clockIn: "09:18", clockOut: "", late: "", absent: "" },
+            { name: "NAYEM", date: "22-Nov-25", clockIn: "11:57", clockOut: "18:58", late: "02:42", absent: "" },
+            { name: "NAYEM", date: "26-Nov-25", clockIn: "08:47", clockOut: "", late: "", absent: "" },
+            { name: "SHILA", date: "06-Nov-25", clockIn: "09:14", clockOut: "19:01", late: "", absent: "" },
+            { name: "SHILA", date: "07-Nov-25", clockIn: "09:04", clockOut: "19:01", late: "", absent: "" },
+            { name: "SHILA", date: "08-Nov-25", clockIn: "09:05", clockOut: "19:02", late: "", absent: "" },
+            { name: "SHILA", date: "10-Nov-25", clockIn: "10:21", clockOut: "19:21", late: "01:06", absent: "" },
+            { name: "SHILA", date: "11-Nov-25", clockIn: "09:19", clockOut: "18:54", late: "", absent: "" },
+            { name: "SHILA", date: "12-Nov-25", clockIn: "09:13", clockOut: "18:33", late: "", absent: "" },
+            { name: "SHILA", date: "13-Nov-25", clockIn: "09:07", clockOut: "", late: "", absent: "" },
+            { name: "SHILA", date: "14-Nov-25", clockIn: "09:25", clockOut: "18:57", late: "00:10", absent: "" },
+            { name: "SHILA", date: "15-Nov-25", clockIn: "09:17", clockOut: "", late: "", absent: "" },
+            { name: "SHILA", date: "19-Nov-25", clockIn: "09:39", clockOut: "", late: "00:24", absent: "" },
+            { name: "SHILA", date: "20-Nov-25", clockIn: "11:28", clockOut: "18:59", late: "02:13", absent: "" },
+            { name: "SHILA", date: "21-Nov-25", clockIn: "09:23", clockOut: "19:06", late: "", absent: "" },
+            { name: "SHILA", date: "22-Nov-25", clockIn: "09:05", clockOut: "16:13", late: "", absent: "" },
+            { name: "SHILA", date: "24-Nov-25", clockIn: "09:15", clockOut: "19:07", late: "", absent: "" },
+            { name: "SHILA", date: "25-Nov-25", clockIn: "09:18", clockOut: "19:05", late: "", absent: "" },
+            { name: "SHILA", date: "26-Nov-25", clockIn: "09:08", clockOut: "18:55", late: "", absent: "" },
+            { name: "SHILA", date: "27-Nov-25", clockIn: "09:13", clockOut: "18:58", late: "", absent: "" },
+            { name: "SHILA", date: "28-Nov-25", clockIn: "08:55", clockOut: "16:19", late: "", absent: "" },
+            { name: "SHILA", date: "29-Nov-25", clockIn: "09:18", clockOut: "19:30", late: "", absent: "" },
+            { name: "ARNOB", date: "01-Nov-25", clockIn: "09:51", clockOut: "19:24", late: "00:36", absent: "" },
+            { name: "ARNOB", date: "03-Nov-25", clockIn: "09:01", clockOut: "20:12", late: "", absent: "" },
+            { name: "ARNOB", date: "04-Nov-25", clockIn: "08:49", clockOut: "19:19", late: "", absent: "" },
+            { name: "ARNOB", date: "05-Nov-25", clockIn: "09:04", clockOut: "19:01", late: "", absent: "" },
+            { name: "ARNOB", date: "06-Nov-25", clockIn: "09:00", clockOut: "19:21", late: "", absent: "" },
+            { name: "ARNOB", date: "07-Nov-25", clockIn: "08:59", clockOut: "", late: "", absent: "" },
+            { name: "ARNOB", date: "10-Nov-25", clockIn: "09:02", clockOut: "20:24", late: "", absent: "" },
+            { name: "ARNOB", date: "11-Nov-25", clockIn: "08:49", clockOut: "20:13", late: "", absent: "" },
+            { name: "ARNOB", date: "12-Nov-25", clockIn: "09:00", clockOut: "20:07", late: "", absent: "" },
+            { name: "ARNOB", date: "13-Nov-25", clockIn: "08:51", clockOut: "19:29", late: "", absent: "" },
+            { name: "ARNOB", date: "14-Nov-25", clockIn: "08:45", clockOut: "20:54", late: "", absent: "" },
+            { name: "ARNOB", date: "15-Nov-25", clockIn: "08:25", clockOut: "17:47", late: "", absent: "" },
+            { name: "ARNOB", date: "17-Nov-25", clockIn: "08:46", clockOut: "20:12", late: "", absent: "" },
+            { name: "ARNOB", date: "18-Nov-25", clockIn: "08:56", clockOut: "19:14", late: "", absent: "" },
+            { name: "ARNOB", date: "19-Nov-25", clockIn: "09:02", clockOut: "19:23", late: "", absent: "" },
+            { name: "ARNOB", date: "20-Nov-25", clockIn: "09:14", clockOut: "19:00", late: "", absent: "" },
+            { name: "ARNOB", date: "21-Nov-25", clockIn: "09:06", clockOut: "19:00", late: "", absent: "" },
+            { name: "ARNOB", date: "22-Nov-25", clockIn: "09:20", clockOut: "18:58", late: "", absent: "" },
+            { name: "ARNOB", date: "24-Nov-25", clockIn: "08:53", clockOut: "21:37", late: "", absent: "" },
+            { name: "ARNOB", date: "25-Nov-25", clockIn: "08:49", clockOut: "20:04", late: "", absent: "" },
+            { name: "ARNOB", date: "26-Nov-25", clockIn: "08:47", clockOut: "22:43", late: "", absent: "" },
+            { name: "ARNOB", date: "27-Nov-25", clockIn: "08:39", clockOut: "19:03", late: "", absent: "" },
+            { name: "ARNOB", date: "28-Nov-25", clockIn: "10:35", clockOut: "19:11", late: "01:20", absent: "" },
+            { name: "ARNOB", date: "29-Nov-25", clockIn: "08:50", clockOut: "19:13", late: "", absent: "" },
+            { name: "Maidul", date: "01-Nov-25", clockIn: "09:25", clockOut: "", late: "00:10", absent: "" },
+            { name: "Maidul", date: "06-Nov-25", clockIn: "10:03", clockOut: "", late: "00:48", absent: "" },
+            { name: "Maidul", date: "29-Nov-25", clockIn: "09:14", clockOut: "", late: "", absent: "" },
+            { name: "Raju", date: "01-Nov-25", clockIn: "09:03", clockOut: "19:08", late: "", absent: "" },
+            { name: "Raju", date: "03-Nov-25", clockIn: "10:43", clockOut: "20:31", late: "01:28", absent: "" },
+            { name: "Raju", date: "04-Nov-25", clockIn: "10:39", clockOut: "20:40", late: "01:24", absent: "" },
+            { name: "Raju", date: "05-Nov-25", clockIn: "10:28", clockOut: "20:40", late: "01:13", absent: "" },
+            { name: "Raju", date: "06-Nov-25", clockIn: "10:21", clockOut: "21:04", late: "01:06", absent: "" },
+            { name: "Raju", date: "07-Nov-25", clockIn: "10:01", clockOut: "", late: "00:46", absent: "" },
+            { name: "Raju", date: "10-Nov-25", clockIn: "10:36", clockOut: "21:12", late: "01:21", absent: "" },
+            { name: "Raju", date: "11-Nov-25", clockIn: "10:32", clockOut: "20:33", late: "01:17", absent: "" },
+            { name: "Raju", date: "12-Nov-25", clockIn: "10:20", clockOut: "20:18", late: "01:05", absent: "" },
+            { name: "Raju", date: "13-Nov-25", clockIn: "08:51", clockOut: "19:52", late: "", absent: "" },
+            { name: "Raju", date: "14-Nov-25", clockIn: "10:19", clockOut: "21:07", late: "01:04", absent: "" },
+            { name: "Raju", date: "15-Nov-25", clockIn: "09:25", clockOut: "19:49", late: "00:10", absent: "" },
+            { name: "Raju", date: "17-Nov-25", clockIn: "10:24", clockOut: "19:34", late: "01:09", absent: "" },
+            { name: "Raju", date: "18-Nov-25", clockIn: "10:28", clockOut: "", late: "01:13", absent: "" },
+            { name: "Raju", date: "20-Nov-25", clockIn: "10:25", clockOut: "", late: "01:10", absent: "" },
+            { name: "Raju", date: "22-Nov-25", clockIn: "09:13", clockOut: "19:00", late: "", absent: "" },
+            { name: "Raju", date: "24-Nov-25", clockIn: "10:26", clockOut: "20:43", late: "01:11", absent: "" },
+            { name: "Raju", date: "25-Nov-25", clockIn: "10:42", clockOut: "", late: "01:27", absent: "" },
+            { name: "Raju", date: "27-Nov-25", clockIn: "10:19", clockOut: "20:55", late: "01:04", absent: "" },
+            { name: "Raju", date: "28-Nov-25", clockIn: "10:21", clockOut: "21:29", late: "01:06", absent: "" },
+            { name: "Raju", date: "29-Nov-25", clockIn: "09:09", clockOut: "21:29", late: "", absent: "" },
+            { name: "NAHID", date: "01-Nov-25", clockIn: "08:58", clockOut: "", late: "", absent: "" },
+            { name: "NAHID", date: "15-Nov-25", clockIn: "08:50", clockOut: "", late: "", absent: "" },
+            { name: "NAHID", date: "29-Nov-25", clockIn: "08:54", clockOut: "", late: "", absent: "" },
+            { name: "Mizan", date: "01-Nov-25", clockIn: "09:10", clockOut: "", late: "", absent: "" },
+            { name: "Mizan", date: "15-Nov-25", clockIn: "09:05", clockOut: "", late: "", absent: "" },
+            { name: "Mizan", date: "29-Nov-25", clockIn: "09:15", clockOut: "", late: "", absent: "" },
+            { name: "Bodiuzzaman", date: "01-Nov-25", clockIn: "08:52", clockOut: "", late: "", absent: "" },
+            { name: "Bodiuzzaman", date: "10-Nov-25", clockIn: "09:18", clockOut: "", late: "", absent: "" },
+            { name: "Bodiuzzaman", date: "15-Nov-25", clockIn: "09:03", clockOut: "", late: "", absent: "" },
+            { name: "Bodiuzzaman", date: "22-Nov-25", clockIn: "09:26", clockOut: "", late: "00:11", absent: "" },
+            { name: "Bodiuzzaman", date: "26-Nov-25", clockIn: "09:12", clockOut: "", late: "", absent: "" },
+            { name: "Rizvi", date: "01-Nov-25", clockIn: "08:55", clockOut: "18:56", late: "", absent: "" },
+            { name: "Rizvi", date: "03-Nov-25", clockIn: "10:14", clockOut: "20:32", late: "00:59", absent: "" },
+            { name: "Rizvi", date: "05-Nov-25", clockIn: "11:08", clockOut: "20:22", late: "01:53", absent: "" },
+            { name: "Rizvi", date: "06-Nov-25", clockIn: "10:49", clockOut: "20:22", late: "01:34", absent: "" },
+            { name: "Rizvi", date: "07-Nov-25", clockIn: "10:24", clockOut: "20:28", late: "01:09", absent: "" },
+            { name: "Rizvi", date: "08-Nov-25", clockIn: "10:35", clockOut: "19:08", late: "01:20", absent: "" },
+            { name: "Rizvi", date: "10-Nov-25", clockIn: "10:12", clockOut: "20:34", late: "00:57", absent: "" },
+            { name: "Rizvi", date: "11-Nov-25", clockIn: "10:20", clockOut: "20:31", late: "01:05", absent: "" },
+            { name: "Rizvi", date: "14-Nov-25", clockIn: "10:01", clockOut: "19:12", late: "00:46", absent: "" },
+            { name: "Rizvi", date: "15-Nov-25", clockIn: "10:46", clockOut: "", late: "01:31", absent: "" },
+            { name: "Rizvi", date: "18-Nov-25", clockIn: "10:39", clockOut: "20:32", late: "01:24", absent: "" },
+            { name: "Rizvi", date: "19-Nov-25", clockIn: "10:22", clockOut: "20:36", late: "01:07", absent: "" },
+            { name: "Rizvi", date: "20-Nov-25", clockIn: "11:01", clockOut: "20:30", late: "01:46", absent: "" },
+            { name: "Rizvi", date: "21-Nov-25", clockIn: "10:43", clockOut: "", late: "01:28", absent: "" },
+            { name: "Rizvi", date: "24-Nov-25", clockIn: "12:26", clockOut: "20:53", late: "03:11", absent: "" },
+            { name: "Rizvi", date: "26-Nov-25", clockIn: "10:35", clockOut: "21:11", late: "01:20", absent: "" },
+            { name: "Rizvi", date: "27-Nov-25", clockIn: "10:28", clockOut: "21:19", late: "01:13", absent: "" },
+            { name: "Rizvi", date: "28-Nov-25", clockIn: "10:29", clockOut: "21:26", late: "01:14", absent: "" }
+        ];
+        
+        // Global variable to store live attendance data
+        let excelAttendanceData = excelAttendanceDataFallback;
+        
+        // Convert Excel attendance to app format for calculations
+        const attendanceRecords = excelAttendanceData.map((att, index) => {
+            const firstShiftEmployees = ['Ritu', 'Shila', 'Arnob', 'Arnab', 'Badiul', 'Bodiuzzaman'];
+            const isFirstShift = firstShiftEmployees.some(name => att.name.toLowerCase().includes(name.toLowerCase()));
+            const isLateRecord = att.late && att.late !== '';
+            
+            return {
+                id: index + 1,
+                employeeId: index + 1,
+                date: att.date,
+                status: isLateRecord ? "Late" : "Present",
+                leaveType: null,
+                clockInTime: att.clockIn,
+                clockOutTime: att.clockOut,
+                shift: isFirstShift ? 1 : 2,
+                earlyLeave: false,
+                employeeName: att.name,
+                lateAmount: att.late
+            };
+        });
+
+        // Expenses - Empty by default (All submitted by Ritu - HR Administrator via Employee Portal)
+        const expenses = [
+            { id: 4, date: "2024-11-16", category: "Evening Snacks", amount: 1500, description: "Client meeting refreshment", requestedBy: "Ritu", status: "Approved", orderId: null, approvedBy: "CEO", approvedAt: "2024-11-16" },
+            { id: 5, date: "2024-11-15", category: "Conveyance", amount: 12000, description: "Factory inspection trip", requestedBy: "Ritu", status: "Pending", orderId: 3, approvedBy: null, approvedAt: null }
+        ];
+
+        // Sample order for first-time use
+        // Sample order - Demo data to show how it works
+        const sampleOrders = [
+            { 
+                id: 1,
+                orderNumber: "EXAMPLE-001", 
+                clientName: "Example Company (Demo)", 
+                factoryName: "Example Factory (Demo)", 
+                shipmentDate: "2025-01-01", 
+                fobValue: 10000,  // Client pays this
+                factoryCost: 8000, // You pay this
+                agentName: "",
+                agentCommission: 0,
+                status: "Pending",
+                createdAt: "2025-01-01",
+                isDemo: true
+            }
+        ];
+        
+        // Get orders from localStorage (shared with Employee Portal)
+        function getOrdersFromStorage() {
+            const stored = localStorage.getItem('indigoOrders');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            // First time: save sample order
+            localStorage.setItem('indigoOrders', JSON.stringify(sampleOrders));
+            return sampleOrders;
+        }
+        
+        // Calculate order commission (same as Employee Portal)
+        function calculateOrderCommissionFromStorage(order) {
+            const grossMargin = order.fobValue - order.factoryCost;
+            const agentFee = order.fobValue * (order.agentCommission / 100);
+            const netCommission = grossMargin - agentFee;
+            return {
+                grossMargin,
+                agentFee,
+                netCommission
+            };
+        }
+
+        // ============================================
+        // BUSINESS LOGIC FUNCTIONS
+        // ============================================
+
+        // Calculate attendance snapshot for today
+        function calculateAttendanceSnapshot(today, employees, attendanceRecords) {
+            const todayStr = typeof today === 'string' ? today : today.toISOString().split('T')[0];
+            const activeEmployees = employees.filter(e => e.status === 'active');
+            const todayRecords = attendanceRecords.filter(r => r.date === todayStr);
+            
+            let presentCount = 0;
+            let lateCount = 0;
+            let earlyLeaveCount = 0;
+            let absentCount = 0;
+            let ulCount = 0;
+            
+            activeEmployees.forEach(emp => {
+                const record = todayRecords.find(r => r.employeeId === emp.id);
+                if (record) {
+                    if (record.status === "Present" || (record.status === "Absent" && record.leaveType === "AL")) {
+                        presentCount++;
+                        // Check if late
+                        if (record.status === "Late" || (record.clockInTime && isLate(record.clockInTime, emp.name))) {
+                            lateCount++;
+                        }
+                        // Check if early leave
+                        if (record.earlyLeave || (record.clockOutTime && isEarlyLeave(record.clockOutTime, emp.name))) {
+                            earlyLeaveCount++;
+                        }
+                    } else if (record.status === "Late") {
+                        lateCount++;
+                        presentCount++; // Late is still considered present
+                        if (record.earlyLeave || (record.clockOutTime && isEarlyLeave(record.clockOutTime, emp.name))) {
+                            earlyLeaveCount++;
+                        }
+                    } else if (record.status === "Absent") {
+                        absentCount++;
+                        if (record.leaveType === "UL") {
+                            ulCount++;
+                        }
+                    }
+                }
+            });
+            
+            return { 
+                present: presentCount, 
+                total: activeEmployees.length, 
+                late: lateCount, 
+                earlyLeave: earlyLeaveCount,
+                absent: absentCount,
+                ul: ulCount
+            };
+        }
+        
+        // Calculate late deduction for employee (3 late days = 1 day salary)
+        function calculateLateDeductionForEmployee(employee, attendanceRecords, month) {
+            const monthRecords = attendanceRecords.filter(r => {
+                const recordDate = new Date(r.date);
+                return recordDate.getMonth() === month.getMonth() && 
+                       recordDate.getFullYear() === month.getFullYear() &&
+                       r.employeeId === employee.id;
+            });
+            
+            const lateDays = monthRecords.filter(r => {
+                if (r.status === "Late") return true;
+                if (r.clockInTime && isLate(r.clockInTime, employee.name)) return true;
+                return false;
+            }).length;
+            
+            const daysDeducted = Math.floor(lateDays / 3);
+            const dailySalary = employee.monthlySalary / employee.workingDaysInMonth;
+            return {
+                lateDays: lateDays,
+                daysDeducted: daysDeducted,
+                deductionAmount: daysDeducted * dailySalary
+            };
+        }
+        
+        // Calculate total deductions (late + UL)
+        function calculateTotalDeductions(employee, attendanceRecords, month) {
+            const lateDeduction = calculateLateDeductionForEmployee(employee, attendanceRecords, month);
+            const monthRecords = attendanceRecords.filter(r => {
+                const recordDate = new Date(r.date);
+                return recordDate.getMonth() === month.getMonth() && 
+                       recordDate.getFullYear() === month.getFullYear() &&
+                       r.employeeId === employee.id;
+            });
+            
+            // Count UL days
+            const ulDays = monthRecords.filter(r => r.status === "Absent" && r.leaveType === "UL").length;
+            const dailySalary = employee.monthlySalary / employee.workingDaysInMonth;
+            const ulDeduction = ulDays * dailySalary;
+            
+            return {
+                lateDays: lateDeduction.lateDays,
+                lateDeduction: lateDeduction.deductionAmount,
+                ulDays: ulDays,
+                ulDeduction: ulDeduction,
+                totalDeduction: lateDeduction.deductionAmount + ulDeduction
+            };
+        }
+
+        // Calculate pending high-value expenses (> 5000 Taka)
+        function calculatePendingHighExpenses(expenses) {
+            return expenses.filter(e => e.amount > 5000 && e.status === 'Pending');
+        }
+
+        // Calculate commission for a single order
+        function calculateOrderCommission(order, allExpenses) {
+            const grossCommission = order.fobClient - order.costFactory;
+            
+            // Calculate agent commission
+            let agentCommissionAmount;
+            if (order.commissionType === 'PercentOfFOB') {
+                agentCommissionAmount = order.fobClient * (order.commissionValue / 100);
+            } else {
+                agentCommissionAmount = order.commissionValue;
+            }
+            
+            const actualIndigoCommission = grossCommission - agentCommissionAmount;
+            
+            // Sum linked expenses (expenses with orderId matching this order)
+            const orderExpenses = allExpenses
+                .filter(e => e.orderId === order.id && e.status === 'Approved')
+                .reduce((sum, e) => sum + e.amount, 0);
+            
+            const finalCommission = actualIndigoCommission - orderExpenses;
+            const marginPercent = (finalCommission / order.fobClient) * 100;
+            
+            return {
+                grossCommission,
+                agentCommissionAmount,
+                actualIndigoCommission,
+                orderExpenses,
+                finalCommission,
+                marginPercent
+            };
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+
+        async function updateBusinessHealth() {
+            // Total employees from Salary Excel file (24 employees)
+            const TOTAL_EMPLOYEES = 24;
+            
+            // Get attendance from Supabase (fallback to localStorage if Supabase unavailable)
+            let storedAttendance = [];
+            if (supabaseAvailable) {
+                const currentDate = new Date();
+                storedAttendance = await getAttendanceFromSupabase(currentDate.getMonth() + 1, currentDate.getFullYear());
+            } else {
+                storedAttendance = getAttendanceFromStorage();
+            }
+            
+            // Count pending expenses from Supabase
+            let storedExpenses = [];
+            if (supabaseAvailable) {
+                storedExpenses = await getExpensesFromSupabase({ status: 'Pending' });
+            } else {
+                storedExpenses = getExpensesFromStorage().filter(e => e.status === 'Pending');
+            }
+            const totalPendingCount = storedExpenses.length;
+            
+            // Count unviewed boss notifications
+            const unviewedNotifications = getBossNotifications();
+            const notificationCount = unviewedNotifications.length;
+            
+            const indicator = document.getElementById('healthIndicator');
+            const presentCountEl = document.getElementById('presentCount');
+            const pendingCountEl = document.getElementById('pendingCount');
+            const expenseBadge = document.getElementById('expenseBadge');
+            const attendanceLabel = document.getElementById('attendanceLabel');
+            const attendanceStats = document.getElementById('attendanceStats');
+            const statPresent = document.getElementById('statPresent');
+            const statLate = document.getElementById('statLate');
+            const statAbsent = document.getElementById('statAbsent');
+            
+            // Calculate latest day's attendance summary from uploaded data
+            let attendanceSummary = '';
+            let presentCount = 0;
+            let lateCount = 0;
+            let absentCount = 0;
+            let latestDate = null;
+            
+            if (storedAttendance.length > 0) {
+                // Find the latest date in the uploaded data
+                const dates = [...new Set(storedAttendance.map(r => r.date))].sort((a, b) => new Date(b) - new Date(a));
+                latestDate = dates[0];
+                
+                // Get records for the latest date only
+                const latestDayRecords = storedAttendance.filter(r => r.date === latestDate);
+                
+                // Calculate present: anyone who clocked in (has clockIn time)
+                presentCount = latestDayRecords.filter(r => r.clockIn && r.clockIn !== '').length;
+                
+                // Calculate late: using proper shift rules
+                // First Shift (9 AM): Ritu, Shila, Arnab, Badiul - late if > 9:15 AM
+                // Second Shift (10:30 AM): All others - late if > 10:45 AM
+                const firstShiftNames = ['RITU', 'SHILA', 'ARNAB', 'ARNOB', 'BADIUL', 'BODIUZZAMAN'];
+                
+                lateCount = latestDayRecords.filter(r => {
+                    // If already marked as late
+                    if (r.isLate) return true;
+                    if (r.late && r.late !== '' && r.late !== 'nan') return true;
+                    
+                    // Check clock-in time against shift rules
+                    if (r.clockIn && r.clockIn !== '') {
+                        const clockInParts = r.clockIn.split(':');
+                        if (clockInParts.length >= 2) {
+                            const hour = parseInt(clockInParts[0]);
+                            const minute = parseInt(clockInParts[1]);
+                            const totalMinutes = hour * 60 + minute;
+                            
+                            const isFirstShift = firstShiftNames.some(n => 
+                                r.name && r.name.toUpperCase().includes(n)
+                            );
+                            
+                            // First shift: late if after 9:15 (555 minutes)
+                            // Second shift: late if after 10:45 (645 minutes)
+                            const lateThreshold = isFirstShift ? 555 : 645;
+                            
+                            if (totalMinutes > lateThreshold) return true;
+                        }
+                    }
+                    return false;
+                }).length;
+                
+                // Calculate absent: anyone marked absent or no clockIn
+                absentCount = latestDayRecords.filter(r => {
+                    if (r.status === 'Absent') return true;
+                    if (r.absent && r.absent !== '' && r.absent !== 'nan') return true;
+                    if (!r.clockIn || r.clockIn === '') return true;
+                    return false;
+                }).length;
+                
+                // Recalculate present (those who are not absent)
+                presentCount = TOTAL_EMPLOYEES - absentCount;
+                if (presentCount < 0) presentCount = 0;
+                
+                // Format date for display
+                const displayDate = new Date(latestDate).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                
+                // Update the label to show which day's data
+                if (attendanceLabel) {
+                    attendanceLabel.textContent = `Attendance (${displayDate})`;
+                }
+                
+                // Show detailed stats
+                if (attendanceStats) {
+                    attendanceStats.style.display = 'block';
+                    if (statPresent) statPresent.textContent = presentCount;
+                    if (statLate) statLate.textContent = lateCount;
+                    if (statAbsent) statAbsent.textContent = absentCount;
+                }
+                
+                attendanceSummary = `${lateCount} late arrivals on this day`;
+            } else {
+                // No uploaded data - show placeholder
+                attendanceSummary = 'Upload attendance from Employee Portal';
+                if (attendanceLabel) {
+                    attendanceLabel.textContent = 'Attendance';
+                }
+                if (attendanceStats) {
+                    attendanceStats.style.display = 'none';
+                }
+            }
+            
+            // Show attendance summary - big number shows present/total
+            presentCountEl.textContent = storedAttendance.length > 0 ? `${presentCount}/${TOTAL_EMPLOYEES}` : '--';
+            
+            // Show status text - prioritize expense notifications
+            let statusText = attendanceSummary;
+            if (notificationCount > 0) {
+                statusText = `${notificationCount} new expense${notificationCount !== 1 ? 's' : ''} to review`;
+            } else if (totalPendingCount > 0) {
+                statusText = `${totalPendingCount} expense${totalPendingCount !== 1 ? 's' : ''} pending approval`;
+            }
+            pendingCountEl.textContent = statusText;
+            
+            if (expenseBadge) {
+                expenseBadge.textContent = notificationCount > 0 ? notificationCount : totalPendingCount;
+                expenseBadge.style.display = (notificationCount > 0 || totalPendingCount > 0) ? 'block' : 'none';
+            }
+            
+            // Update health indicator
+            indicator.className = 'health-indicator';
+            const issues = totalPendingCount + notificationCount + (lateCount > 3 ? 1 : 0);
+            if (issues > 0 && issues <= 2) {
+                indicator.classList.add('warning');
+            } else if (issues > 2) {
+                indicator.classList.add('critical');
+            }
+        }
+        
+        // Get attendance from localStorage (shared with Employee Portal)
+        function getAttendanceFromStorage() {
+            const stored = localStorage.getItem('indigoAttendanceRecords');
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function updateExpenseModal() {
+            // Get expenses from localStorage
+            const storedExpenses = getExpensesFromStorage();
+            
+            // Mark all boss notifications as viewed when modal opens
+            markAllBossNotificationsViewed();
+            
+            // Show ALL expenses (both Auto-Approved and Pending) sorted by date
+            const allExpenses = [...expenses, ...storedExpenses];
+            allExpenses.sort((a, b) => new Date(b.date || b.submittedAt) - new Date(a.date || a.submittedAt));
+            
+            const expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            
+            if (allExpenses.length === 0) {
+                expenseList.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 40px;">
+                    <i data-lucide="inbox" style="width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.2;"></i>
+                    <br>No expenses to review
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+            
+            // Group expenses by status
+            const pendingExpenses = allExpenses.filter(e => e.status === 'Pending');
+            const autoApprovedExpenses = allExpenses.filter(e => e.status === 'Auto-Approved');
+            const approvedExpenses = allExpenses.filter(e => e.status === 'Approved');
+            const rejectedExpenses = allExpenses.filter(e => e.status === 'Rejected');
+            
+            // Display Pending Expenses (need action)
+            if (pendingExpenses.length > 0) {
+                const pendingSection = document.createElement('div');
+                pendingSection.innerHTML = '<h4 style="color: #f59e0b; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⚠️ Pending Approval (>= ৳5000)</h4>';
+                expenseList.appendChild(pendingSection);
+                
+                pendingExpenses.forEach(expense => {
+                    expenseList.appendChild(createExpenseCard(expense, true));
+                });
+            }
+            
+            // Display Auto-Approved Expenses (for info)
+            if (autoApprovedExpenses.length > 0) {
+                const autoSection = document.createElement('div');
+                autoSection.innerHTML = '<h4 style="color: #10b981; font-size: 14px; margin: 24px 0 12px 0; text-transform: uppercase; letter-spacing: 1px;">✓ Auto-Approved (< ৳5000)</h4>';
+                expenseList.appendChild(autoSection);
+                
+                autoApprovedExpenses.forEach(expense => {
+                    expenseList.appendChild(createExpenseCard(expense, false));
+                });
+            }
+            
+            // Display Approved Expenses (recently approved)
+            if (approvedExpenses.length > 0) {
+                const approvedSection = document.createElement('div');
+                approvedSection.innerHTML = '<h4 style="color: #10b981; font-size: 14px; margin: 24px 0 12px 0; text-transform: uppercase; letter-spacing: 1px;">✓ Approved</h4>';
+                expenseList.appendChild(approvedSection);
+                
+                approvedExpenses.slice(0, 3).forEach(expense => { // Show only recent 3
+                    expenseList.appendChild(createExpenseCard(expense, false));
+                });
+            }
+            
+            // Display Rejected Expenses (recently rejected)
+            if (rejectedExpenses.length > 0) {
+                const rejectedSection = document.createElement('div');
+                rejectedSection.innerHTML = '<h4 style="color: #ef4444; font-size: 14px; margin: 24px 0 12px 0; text-transform: uppercase; letter-spacing: 1px;">✗ Rejected</h4>';
+                expenseList.appendChild(rejectedSection);
+                
+                rejectedExpenses.slice(0, 3).forEach(expense => { // Show only recent 3
+                    expenseList.appendChild(createExpenseCard(expense, false));
+                });
+            }
+            
+            lucide.createIcons();
+            
+            // Update badge count after viewing
+            updateBusinessHealth();
+        }
+        
+        // Helper function to create expense card
+        function createExpenseCard(expense, showActions) {
+            const expenseDiv = document.createElement('div');
+            let statusBadge = '';
+            
+            if (expense.status === 'Pending') {
+                statusBadge = '<span style="padding: 4px 10px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-radius: 8px; font-size: 11px; font-weight: 600;">PENDING</span>';
+            } else if (expense.status === 'Auto-Approved') {
+                statusBadge = '<span style="padding: 4px 10px; background: rgba(16, 185, 129, 0.2); color: #10b981; border-radius: 8px; font-size: 11px; font-weight: 600;">AUTO-APPROVED</span>';
+            } else if (expense.status === 'Approved') {
+                statusBadge = '<span style="padding: 4px 10px; background: rgba(16, 185, 129, 0.2); color: #10b981; border-radius: 8px; font-size: 11px; font-weight: 600;">APPROVED</span>';
+            } else if (expense.status === 'Rejected') {
+                statusBadge = '<span style="padding: 4px 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 8px; font-size: 11px; font-weight: 600;">REJECTED</span>';
+            }
+            
+            expenseDiv.style.cssText = 'background: rgba(0,0,0,0.02); padding: 20px; border-radius: 16px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.03);';
+            expenseDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center;">
+                    <span style="font-weight: 600; color: #000; font-size: 16px;">${expense.category}</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        ${statusBadge}
+                        <span style="color: #f59e0b; font-weight: 600; font-size: 16px; font-family: monospace;">৳${expense.amount.toLocaleString()}</span>
+                    </div>
+                </div>
+                <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px; line-height: 1.4;">${expense.description}</div>
+                <div style="font-size: 12px; color: #64748b; margin-bottom: ${showActions ? '16px' : '0'};">Requested by: <span style="color: #94a3b8;">${expense.requestedBy || 'Unknown'}</span> • <span style="color: #64748b;">${expense.date || new Date(expense.submittedAt).toLocaleDateString()}</span></div>
+                ${showActions ? `
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="approveExpense(${expense.id})" style="flex: 1; padding: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Approve</button>
+                    <button onclick="showRejectModal(${expense.id})" style="flex: 1; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Reject</button>
+                </div>
+                ` : ''}
+            `;
+            
+            return expenseDiv;
+        }
+
+        function updateOrdersModal() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '';
+            
+            // Get orders from localStorage
+            const orders = getOrdersFromStorage();
+            
+            if (orders.length === 0) {
+                ordersList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <i data-lucide="inbox" style="width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.2;"></i>
+                        <p>No orders yet</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Orders added by Ritu will appear here</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            // Sort orders by date (most recent first)
+            const sortedOrders = [...orders].sort((a, b) => new Date(b.shipmentDate) - new Date(a.shipmentDate));
+            
+            sortedOrders.forEach(order => {
+                const commission = calculateOrderCommissionFromStorage(order);
+                const commissionUSD = commission.netCommission;
+                const commissionBDT = Math.round(commissionUSD * 110);
+                
+                const orderDiv = document.createElement('div');
+                orderDiv.style.cssText = 'background: rgba(0,0,0,0.02); padding: 20px; border-radius: 16px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.03);';
+                orderDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: #000;">${order.orderNumber}</div>
+                        <div style="padding: 4px 10px; background: ${order.status === 'Cleared' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; color: ${order.status === 'Cleared' ? '#10b981' : '#f59e0b'}; border-radius: 8px; font-size: 11px; font-weight: 600;">${order.status}</div>
+                    </div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Client: ${order.clientName}</div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Factory: ${order.factoryName}</div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">Shipment: ${order.shipmentDate}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div style="padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #64748b;">FOB Value</div>
+                            <div style="font-size: 14px; color: #000; font-weight: 600;">$${order.fobValue.toLocaleString()}</div>
+                        </div>
+                        <div style="padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #64748b;">Factory Cost</div>
+                            <div style="font-size: 14px; color: #000; font-weight: 600;">$${order.factoryCost.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                         <span style="color: #10b981; font-size: 12px; font-weight: 600;">Net Commission</span>
+                         <div style="text-align: right;">
+                            <div style="color: #10b981; font-weight: 700; font-family: monospace; font-size: 16px;">$${commissionUSD.toLocaleString()}</div>
+                            <div style="color: #94a3b8; font-size: 11px;">≈ ৳${commissionBDT.toLocaleString()}</div>
+                         </div>
+                    </div>
+                `;
+                ordersList.appendChild(orderDiv);
+            });
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+
+        function handleApproveExpenses() {
+            updateExpenseModal();
+            document.getElementById('expenseModal').style.display = 'flex';
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expenseModal').style.display = 'none';
+        }
+
+        function approveExpense(id) {
+            // Find expense in both arrays
+            let expense = expenses.find(e => e.id === id);
+            let isStored = false;
+            
+            if (!expense) {
+                const storedExpenses = getExpensesFromStorage();
+                expense = storedExpenses.find(e => e.id === id);
+                isStored = true;
+            }
+            
+            if (expense) {
+                // Update expense
+                expense.status = 'Approved';
+                expense.approvedBy = 'CEO';
+                expense.approvedAt = new Date().toISOString().split('T')[0];
+                expense.isNew = false;
+                
+                // Save to localStorage if it's a stored expense
+                if (isStored) {
+                    saveExpenseToStorage(expense);
+                }
+                
+                // Mark boss notification as viewed
+                markBossNotificationViewed(id);
+                
+                showNotification('Expense approved successfully!');
+                updateBusinessHealth();
+                updateExpenseModal();
+            }
+        }
+        
+        // Store current expense ID for rejection
+        let currentRejectExpenseId = null;
+
+        function showRejectModal(id) {
+            // Find expense in both arrays
+            let expense = expenses.find(e => e.id === id);
+            
+            if (!expense) {
+                const storedExpenses = getExpensesFromStorage();
+                expense = storedExpenses.find(e => e.id === id);
+            }
+            
+            if (expense) {
+                currentRejectExpenseId = id;
+                
+                // Populate expense details in modal
+                const detailsDiv = document.getElementById('rejectExpenseDetails');
+                detailsDiv.innerHTML = `
+                    <div style="font-size: 14px; color: #000; margin-bottom: 8px;">
+                        <strong>Description:</strong> ${expense.description}
+                    </div>
+                    <div style="font-size: 14px; color: #000; margin-bottom: 8px;">
+                        <strong>Category:</strong> ${expense.category}
+                    </div>
+                    <div style="font-size: 14px; color: #000;">
+                        <strong>Amount:</strong> ৳${expense.amount.toLocaleString()}
+                    </div>
+                `;
+                
+                // Clear previous reason
+                document.getElementById('rejectionReasonText').value = '';
+                
+                // Show modal
+                document.getElementById('rejectReasonModal').style.display = 'flex';
+                lucide.createIcons();
+            }
+        }
+        
+        function closeRejectModal() {
+            document.getElementById('rejectReasonModal').style.display = 'none';
+            currentRejectExpenseId = null;
+        }
+        
+        function submitRejection() {
+            const reason = document.getElementById('rejectionReasonText').value.trim();
+            
+            if (!reason) {
+                showNotification('Please provide a rejection reason');
+                return;
+            }
+            
+            if (!currentRejectExpenseId) {
+                showNotification('Error: No expense selected');
+                return;
+            }
+            
+            // Find expense in both arrays
+            let expense = expenses.find(e => e.id === currentRejectExpenseId);
+            let isStored = false;
+            
+            if (!expense) {
+                const storedExpenses = getExpensesFromStorage();
+                expense = storedExpenses.find(e => e.id === currentRejectExpenseId);
+                isStored = true;
+            }
+            
+            if (expense) {
+                // Update expense
+                expense.status = 'Rejected';
+                expense.rejectionReason = reason;
+                expense.approvedBy = 'CEO';
+                expense.approvedAt = new Date().toISOString().split('T')[0];
+                expense.isNew = false;
+                
+                // Save to localStorage if it's a stored expense
+                if (isStored) {
+                    saveExpenseToStorage(expense);
+                }
+                
+                // Create rejection notification for Ritu
+                const rejectionNotification = {
+                    id: Date.now(),
+                    type: 'rejection',
+                    expenseId: expense.id,
+                    expenseDescription: expense.description,
+                    rejectionReason: reason,
+                    date: new Date().toISOString(),
+                    read: false
+                };
+                saveRejectionNotification(rejectionNotification);
+                
+                // Mark boss notification as viewed
+                markBossNotificationViewed(currentRejectExpenseId);
+                
+                showNotification('Expense rejected. Ritu has been notified.');
+                updateBusinessHealth();
+                updateExpenseModal();
+                closeRejectModal();
+            }
+        }
+
+        // Old rejectExpense function - now replaced by showRejectModal
+        function rejectExpense(id) {
+            showRejectModal(id);
+        }
+
+        function handleViewOrders() {
+            updateOrdersModal();
+            document.getElementById('ordersModal').style.display = 'flex';
+        }
+
+        function closeOrdersModal() {
+            document.getElementById('ordersModal').style.display = 'none';
+        }
+
+        function handleSendMessage() {
+            document.getElementById('messageModal').style.display = 'flex';
+            loadMessagesHistory();
+            document.getElementById('messageText').focus();
+            lucide.createIcons();
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').style.display = 'none';
+            document.getElementById('messageText').value = '';
+        }
+
+        function sendNewMessage() {
+            const messageText = document.getElementById('messageText').value.trim();
+            if (!messageText) {
+                showNotification('Please enter a message');
+                return;
+            }
+            
+            const message = {
+                id: Date.now(),
+                from: 'boss',
+                to: 'employee',
+                content: messageText,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+            
+            saveMessage(message);
+            showNotification('✓ Message sent to team!');
+            document.getElementById('messageText').value = '';
+            loadMessagesHistory();
+        }
+        
+        function loadMessagesHistory() {
+            const messagesHistory = document.getElementById('messagesHistory');
+            const messages = getMessages();
+            
+            // Get messages sent by boss
+            const bossMessages = messages.filter(m => m.from === 'boss').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (bossMessages.length === 0) {
+                messagesHistory.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <i data-lucide="inbox" style="width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.2;"></i>
+                        <p>No messages sent yet</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            messagesHistory.innerHTML = '';
+            
+            bossMessages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.style.cssText = `
+                    background: rgba(0,0,0,0.02);
+                    border: 1px solid rgba(0,0,0,0.03);
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                `;
+                
+                const messageDate = new Date(message.timestamp);
+                const formattedDate = messageDate.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true
+                });
+                
+                // Get replies
+                const replies = messages.filter(m => m.replyTo === message.id);
+                
+                messageDiv.innerHTML = `
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">${formattedDate}</div>
+                    <div style="font-size: 14px; color: #000; margin-bottom: 12px;">${message.content}</div>
+                    
+                    ${replies.length > 0 ? `
+                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 12px; margin-top: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <i data-lucide="corner-down-right" style="width: 14px; height: 14px; color: var(--color-success);"></i>
+                                <strong style="font-size: 12px; color: var(--color-success);">Reply from Team:</strong>
+                                ${replies[0].read ? '' : '<span style="background: var(--color-success); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-left: 8px;">NEW</span>'}
+                            </div>
+                            <div style="font-size: 13px; color: #000; padding-left: 22px;">
+                                ${replies[0].content}
+                            </div>
+                            <div style="font-size: 11px; color: #666; padding-left: 22px; margin-top: 4px;">
+                                ${new Date(replies[0].timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </div>
+                        </div>
+                    ` : '<div style="font-size: 12px; color: #666; font-style: italic;">No reply yet</div>'}
+                `;
+                
+                messagesHistory.appendChild(messageDiv);
+                
+                // Mark replies as read
+                replies.forEach(reply => {
+                    if (!reply.read) {
+                        markReplyAsRead(reply.id);
+                    }
+                });
+            });
+            
+            lucide.createIcons();
+            updateRepliesBadge();
+        }
+        
+        function updateRepliesBadge() {
+            const badge = document.getElementById('repliesBadge');
+            const unreadCount = getUnreadRepliesCount();
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('expenseModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeExpenseModal();
+        });
+        document.getElementById('ordersModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeOrdersModal();
+        });
+        document.getElementById('messageModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeMessageModal();
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.03);
+                backdrop-filter: blur(12px);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 16px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 3000;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                border: 1px solid rgba(0,0,0,0.05);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                animation: slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            `;
+            notification.innerHTML = `<i data-lucide="bell" style="width: 16px; height: 16px; color: var(--color-primary);"></i> ${message}`;
+            document.body.appendChild(notification);
+            lucide.createIcons();
+            
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes slideDown {
+                    from { transform: translate(-50%, -20px); opacity: 0; }
+                    to { transform: translate(-50%, 0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        // Update orders badge
+        function updateOrdersBadge() {
+            const orders = getOrdersFromStorage();
+            const badge = document.getElementById('ordersBadge');
+            if (badge) {
+                badge.textContent = orders.length;
+            }
+        }
+        
+        // ============================================
+        // SESSION CHECK & LOGOUT
+        // ============================================
+        
+        // Check if user came through proper login
+        function checkBossSession() {
+            const isLoggedIn = sessionStorage.getItem('indigoBossLoggedIn');
+            if (isLoggedIn !== 'true') {
+                // Not logged in - redirect to login page
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+        
+        // Logout function - returns to PIN screen
+        function logout() {
+            sessionStorage.removeItem('indigoBossLoggedIn');
+            window.location.href = 'index.html';
+        }
+        
+        // Make logout available globally
+        window.logout = logout;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check session - redirect if not logged in
+            if (!checkBossSession()) return;
+            
+            lucide.createIcons();
+            
+            // Fetch live attendance data from Google Sheets
+            console.log('📊 Fetching attendance data from Google Sheets...');
+            excelAttendanceData = await fetchAttendanceFromGoogleSheets();
+            
+            // Update dashboard with fresh data
+            updateBusinessHealth();
+            updateRepliesBadge();
+            updateOrdersBadge();
+            
+            // Refresh data every 5 minutes
+            setInterval(async () => {
+                console.log('🔄 Refreshing attendance data...');
+                excelAttendanceData = await fetchAttendanceFromGoogleSheets();
+                updateBusinessHealth();
+                updateRepliesBadge();
+                updateOrdersBadge();
+            }, 300000); // 5 minutes
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Optimize for iPhone Safari
+        if (window.navigator.standalone) {
+            document.body.classList.add('standalone');
+        }
+    </script>
+</body>
+</html>
+</html>

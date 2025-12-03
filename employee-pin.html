@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Employee Access - Indigo Fashion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-bg: #F5F5F0;
+            --color-primary: #000000;
+            --color-text: #000000;
+            --color-text-muted: #666666;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text);
+            overflow: hidden;
+        }
+
+        .login-container {
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            padding: 20px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--color-text);
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            color: var(--color-text);
+            letter-spacing: 0.02em;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            margin-bottom: 40px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .pin-display {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 36px;
+        }
+
+        .pin-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.08);
+            border: 1.5px solid rgba(0, 0, 0, 0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .pin-dot.filled {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            transform: scale(1.1);
+        }
+
+        .pin-dot.error {
+            background: var(--color-danger);
+            border-color: var(--color-danger);
+            animation: shake 0.5s ease;
+        }
+
+        .pin-dot.success {
+            background: var(--color-success);
+            border-color: var(--color-success);
+            animation: pulse 0.3s ease;
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 260px;
+            margin: 0 auto;
+        }
+
+        .numpad-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.02);
+            color: var(--color-text);
+            font-size: 28px;
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .numpad-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .numpad-btn.action {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .numpad-btn.action:hover {
+            color: var(--color-text);
+        }
+
+        .numpad-btn.clear:hover {
+            color: var(--color-danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .numpad-btn.empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .hint {
+            margin-top: 32px;
+            font-size: 12px;
+            color: var(--color-text-muted);
+            line-height: 1.6;
+        }
+
+        .portal-indicator {
+            margin-top: 16px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 13px;
+            color: var(--color-text-muted);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .portal-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .portal-indicator.success {
+            color: var(--color-success);
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">
+        <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+        Back
+    </a>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Opening Employee Dashboard...</div>
+    </div>
+
+    <div class="login-container">
+        <div class="logo">Employee Access</div>
+        <div class="subtitle">Enter PIN to continue</div>
+
+        <div class="pin-display">
+            <div class="pin-dot" id="dot1"></div>
+            <div class="pin-dot" id="dot2"></div>
+            <div class="pin-dot" id="dot3"></div>
+        </div>
+
+        <div class="numpad" id="numpad">
+            <button type="button" class="numpad-btn" data-digit="1">1</button>
+            <button type="button" class="numpad-btn" data-digit="2">2</button>
+            <button type="button" class="numpad-btn" data-digit="3">3</button>
+            <button type="button" class="numpad-btn" data-digit="4">4</button>
+            <button type="button" class="numpad-btn" data-digit="5">5</button>
+            <button type="button" class="numpad-btn" data-digit="6">6</button>
+            <button type="button" class="numpad-btn" data-digit="7">7</button>
+            <button type="button" class="numpad-btn" data-digit="8">8</button>
+            <button type="button" class="numpad-btn" data-digit="9">9</button>
+            <button type="button" class="numpad-btn action clear" data-action="clear">
+                <i data-lucide="delete" style="width: 22px; height: 22px; pointer-events: none;"></i>
+            </button>
+            <button type="button" class="numpad-btn" data-digit="0">0</button>
+            <button type="button" class="numpad-btn empty" disabled></button>
+        </div>
+
+        <div class="hint">Enter your 3-digit access code</div>
+        <div class="portal-indicator" id="portalIndicator"></div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const EMPLOYEE_PIN = '269';
+        let currentPin = '';
+        let isProcessing = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const numpad = document.getElementById('numpad');
+            numpad.addEventListener('click', handleNumpadClick);
+            numpad.addEventListener('touchend', handleNumpadTouch);
+        });
+
+        function handleNumpadClick(e) {
+            const btn = e.target.closest('.numpad-btn');
+            if (!btn || btn.disabled) return;
+            e.preventDefault();
+            processButton(btn);
+        }
+
+        function handleNumpadTouch(e) {
+            const btn = e.target.closest('.numpad-btn');
+            if (!btn || btn.disabled) return;
+            e.preventDefault();
+            processButton(btn);
+        }
+
+        function processButton(btn) {
+            if (isProcessing) return;
+            const digit = btn.dataset.digit;
+            const action = btn.dataset.action;
+            
+            if (digit) {
+                enterDigit(digit);
+            } else if (action === 'clear') {
+                clearPin();
+            }
+        }
+
+        function enterDigit(digit) {
+            if (currentPin.length >= 3 || isProcessing) return;
+            currentPin += digit;
+            updateDots();
+            
+            if (currentPin.length === 3) {
+                isProcessing = true;
+                setTimeout(checkPin, 200);
+            }
+        }
+
+        function clearPin() {
+            if (isProcessing) return;
+            currentPin = '';
+            updateDots();
+            hideIndicator();
+        }
+
+        function updateDots() {
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('filled', 'error', 'success');
+                if (i <= currentPin.length) {
+                    dot.classList.add('filled');
+                }
+            }
+        }
+
+        function checkPin() {
+            const dots = document.querySelectorAll('.pin-dot');
+            
+            if (currentPin === EMPLOYEE_PIN) {
+                dots.forEach(dot => {
+                    dot.classList.remove('filled');
+                    dot.classList.add('success');
+                });
+                showIndicator('Access Granted');
+                
+                setTimeout(() => {
+                    sessionStorage.setItem('indigoEmployeeLoggedIn', 'true');
+                    showLoading();
+                    setTimeout(() => {
+                        window.location.href = 'employee-app.html';
+                    }, 500);
+                }, 400);
+            } else {
+                dots.forEach(dot => {
+                    dot.classList.remove('filled');
+                    dot.classList.add('error');
+                });
+                
+                setTimeout(() => {
+                    currentPin = '';
+                    isProcessing = false;
+                    updateDots();
+                }, 600);
+            }
+        }
+
+        function showIndicator(text) {
+            const indicator = document.getElementById('portalIndicator');
+            indicator.textContent = `✓ ${text}`;
+            indicator.className = 'portal-indicator show success';
+        }
+
+        function hideIndicator() {
+            const indicator = document.getElementById('portalIndicator');
+            indicator.className = 'portal-indicator';
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (isProcessing) return;
+            
+            if (e.key >= '0' && e.key <= '9') {
+                enterDigit(e.key);
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                if (currentPin.length > 0) {
+                    currentPin = currentPin.slice(0, -1);
+                    updateDots();
+                }
+            } else if (e.key === 'Escape') {
+                clearPin();
+            }
+        });
+    </script>
+</body>
+</html>
+
