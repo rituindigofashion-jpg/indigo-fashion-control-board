@@ -26,7 +26,7 @@
             border-radius: 10px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             padding: 40px;
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
         }
         
@@ -90,6 +90,14 @@
             border-radius: 5px;
             margin: 20px 0;
         }
+        
+        .success {
+            background-color: #efe;
+            color: #060;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -102,72 +110,47 @@
         </div>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Supabase Configuration
         const SUPABASE_URL = 'https://jynkhlaykzcztvadvbpf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bmtobGF5a3pjenR2YWR2YnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2ODMyMjQsImV4cCI6MjA4MDI1OTIyNH0.4TKAMWSdUr1aut5CCS46FiP3RdsWMpV16xNxbvJzw2c';
         
-        // Supabase Client Class
-        class SupabaseClient {
-            constructor(url, key) {
-                this.url = url;
-                this.key = key;
-            }
-            
-            async from(table) {
-                return {
-                    select: async (columns = '*') => {
-                        const response = await fetch(`${this.url}/rest/v1/${table}?select=${columns}`, {
-                            headers: {
-                                'apikey': this.key,
-                                'Authorization': `Bearer ${this.key}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        return await response.json();
-                    }
-                };
-            }
-        }
-        
-        const supabase = new SupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         async function loadEmployeeData() {
             try {
                 const contentDiv = document.getElementById('content');
                 contentDiv.innerHTML = '<div class="loading">Fetching employee records...</div>';
                 
-                const employeeTable = await supabase.from('employees').select();
+                const { data: employees, error } = await supabaseClient.from('employees').select();
                 
-                if (employeeTable && employeeTable.length > 0) {
-                    let html = '<table class="table"><thead><tr><th>Name</th><th>Department</th><th>Position</th><th>Status</th></tr></thead><tbody>';
+                if (error) {
+                    contentDiv.innerHTML = `<div class="success">Database Connected ✓<br>Query Error: ${error.message}<br><small>Check if employees table exists</small></div>`;
+                    return;
+                }
+                
+                if (employees && employees.length > 0) {
+                    let html = '<div class="success">Supabase Connected ✓</div>';
+                    html += '<table class="table"><thead><tr><th>Name</th><th>Department</th><th>Position</th><th>Status</th></tr></thead><tbody>';
                     
-                    employeeTable.forEach(emp => {
+                    employees.forEach(emp => {
                         const statusClass = emp.status === 'active' ? 'status-active' : 'status-inactive';
-                        html += `<tr>
-                            <td>${emp.name}</td>
-                            <td>${emp.department}</td>
-                            <td>${emp.position}</td>
-                            <td><span class="${statusClass}">${emp.status}</span></td>
-                        </tr>`;
+                        html += `<tr><td>${emp.name}</td><td>${emp.department}</td><td>${emp.position}</td><td><span class="${statusClass}">${emp.status}</span></td></tr>`;
                     });
                     
                     html += '</tbody></table>';
-                    html += `<p style="text-align: center; color: #666; margin-top: 20px;">Total Employees: ${employeeTable.length}</p>`;
+                    html += `<p style="text-align: center; color: #666; margin-top: 20px;"><strong>Total Employees: ${employees.length}</strong></p>`;
                     contentDiv.innerHTML = html;
                 } else {
-                    contentDiv.innerHTML = '<div class="error">No employee data found. Check Supabase connection.</div>';
+                    contentDiv.innerHTML = '<div class="success">Supabase Connected ✓<br><small>No employee records in database</small></div>';
                 }
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('Error:', error);
                 document.getElementById('content').innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
         
-        // Load data on page load
-        window.addEventListener('load', loadEmployeeData);
-        
-        // Try to load immediately if document is already ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', loadEmployeeData);
         } else {
