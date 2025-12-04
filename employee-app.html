@@ -2245,7 +2245,8 @@
         // Get all messages
         function getMessages() {
             const stored = localStorage.getItem('indigoMessages');
-            return stored ? JSON.parse(stored) : [];
+            const messages = stored ? JSON.parse(stored) : [];
+    return messages.filter(msg => !msg.message || !msg.message.includes('nigga balls'));
         }
         
         // Save message
