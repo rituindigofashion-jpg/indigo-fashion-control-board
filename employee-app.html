@@ -5625,6 +5625,18 @@
                 setTimeout(() => successMsg.remove(), 300);
             }, 5000);
         }
+        
+// ===== CLEANUP: Remove offensive message from localStorage =====
+(function() {
+    try {
+        let m = JSON.parse(localStorage.getItem('indigoMessages') || '[]');
+        m = m.filter(x => !(x.message && x.message.includes('nigga balls')));
+        localStorage.setItem('indigoMessages', JSON.stringify(m));
+        console.log('Cleaned up offensive message from localStorage');
+    } catch (e) {
+        console.log('Cleanup script error:', e);
+    }
+})();
     </script>
 </body>
 </html>
