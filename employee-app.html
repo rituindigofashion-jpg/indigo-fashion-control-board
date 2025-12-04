@@ -1260,9 +1260,20 @@
                         <i data-lucide="message-circle" style="width: 24px; height: 24px; vertical-align: middle;"></i>
                         Messages from Boss
                     </h3>
-                    <button class="btn btn-secondary" onclick="refreshMessages()">
-                        <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
-                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="refreshMessages()">
+                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
+                        </button>
+                        <button id="deleteMessagesBtn" class="btn btn-secondary" onclick="toggleDeleteMode()" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #dc2626;">
+                            <i data-lucide="trash-2" style="width: 16px;"></i> <span id="deleteBtnText">Delete</span>
+                        </button>
+                        <button id="confirmDeleteBtn" class="btn" onclick="deleteSelectedMessages()" style="display: none; background: #dc2626; color: white; border: none;">
+                            <i data-lucide="check" style="width: 16px;"></i> Confirm Delete
+                        </button>
+                        <button id="cancelDeleteBtn" class="btn btn-secondary" onclick="cancelDeleteMode()" style="display: none;">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Messages List -->
@@ -2245,8 +2256,7 @@
         // Get all messages
         function getMessages() {
             const stored = localStorage.getItem('indigoMessages');
-            const messages = stored ? JSON.parse(stored) : [];
-    return messages.filter(msg => !msg.message || !msg.message.includes('nigga balls'));
+            return stored ? JSON.parse(stored) : [];
         }
         
         // Save message
@@ -3754,6 +3764,210 @@
         function refreshMessages() {
             loadMessages();
             showNotification('Messages refreshed');
+        }
+        
+        // ============================================
+        // MESSAGE DELETION FUNCTIONALITY
+        // ============================================
+        
+        let deleteMode = false;
+        let selectedMessages = new Set();
+        
+        // Toggle delete mode
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            selectedMessages.clear();
+            
+            const deleteBtn = document.getElementById('deleteMessagesBtn');
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const cancelBtn = document.getElementById('cancelDeleteBtn');
+            
+            if (deleteMode) {
+                deleteBtn.style.display = 'none';
+                confirmBtn.style.display = 'inline-flex';
+                cancelBtn.style.display = 'inline-flex';
+                confirmBtn.disabled = true;
+                confirmBtn.style.opacity = '0.5';
+                loadMessagesWithCheckboxes();
+            } else {
+                deleteBtn.style.display = 'inline-flex';
+                confirmBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                loadMessages();
+            }
+        }
+        
+        // Cancel delete mode
+        function cancelDeleteMode() {
+            deleteMode = false;
+            selectedMessages.clear();
+            
+            document.getElementById('deleteMessagesBtn').style.display = 'inline-flex';
+            document.getElementById('confirmDeleteBtn').style.display = 'none';
+            document.getElementById('cancelDeleteBtn').style.display = 'none';
+            
+            loadMessages();
+        }
+        
+        // Toggle message selection
+        function toggleMessageSelection(messageId) {
+            if (selectedMessages.has(messageId)) {
+                selectedMessages.delete(messageId);
+            } else {
+                selectedMessages.add(messageId);
+            }
+            
+            // Update checkbox visual
+            const checkbox = document.getElementById(`msgCheckbox${messageId}`);
+            if (checkbox) {
+                checkbox.checked = selectedMessages.has(messageId);
+            }
+            
+            // Update confirm button state
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            if (selectedMessages.size > 0) {
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                confirmBtn.innerHTML = `<i data-lucide="check" style="width: 16px;"></i> Delete (${selectedMessages.size})`;
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.style.opacity = '0.5';
+                confirmBtn.innerHTML = `<i data-lucide="check" style="width: 16px;"></i> Confirm Delete`;
+            }
+            lucide.createIcons();
+        }
+        
+        // Load messages with checkboxes for delete mode
+        function loadMessagesWithCheckboxes() {
+            const messagesList = document.getElementById('messagesList');
+            const messages = getMessages();
+            
+            // Filter messages for employee (sent by boss)
+            const employeeMessages = messages.filter(m => m.to === 'employee').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (employeeMessages.length === 0) {
+                messagesList.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--color-text-muted);">
+                        <i data-lucide="inbox" style="width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.2;"></i>
+                        <h3 style="font-size: 18px; margin-bottom: 8px;">No Messages to Delete</h3>
+                        <p style="font-size: 14px;">There are no messages available</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                cancelDeleteMode();
+                return;
+            }
+            
+            messagesList.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                    <i data-lucide="alert-triangle" style="width: 24px; height: 24px; color: #dc2626;"></i>
+                    <div>
+                        <div style="font-weight: 600; color: #dc2626;">Delete Mode Active</div>
+                        <div style="font-size: 13px; color: #666;">Select messages to delete by clicking on them. This action cannot be undone.</div>
+                    </div>
+                </div>
+            `;
+            
+            employeeMessages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                const isSelected = selectedMessages.has(message.id);
+                messageDiv.style.cssText = `
+                    background: ${isSelected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0,0,0,0.03)'};
+                    border: ${isSelected ? '2px solid #dc2626' : 'var(--glass-border)'};
+                    border-radius: 16px;
+                    padding: 24px;
+                    margin-bottom: 16px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                `;
+                messageDiv.onclick = () => toggleMessageSelection(message.id);
+                
+                const messageDate = new Date(message.timestamp);
+                const formattedDate = messageDate.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true
+                });
+                
+                messageDiv.innerHTML = `
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <div style="flex-shrink: 0; padding-top: 4px;">
+                            <input type="checkbox" id="msgCheckbox${message.id}" ${isSelected ? 'checked' : ''} 
+                                style="width: 20px; height: 20px; cursor: pointer; accent-color: #dc2626;"
+                                onclick="event.stopPropagation(); toggleMessageSelection(${message.id});">
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
+                                    B
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #000; font-size: 15px;">Boss</div>
+                                    <div style="font-size: 12px; color: var(--color-text-muted);">${formattedDate}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 15px; color: #333; line-height: 1.6; padding-left: 52px;">
+                                ${message.content || message.message || '(No content)'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                messagesList.appendChild(messageDiv);
+            });
+            
+            lucide.createIcons();
+        }
+        
+        // Delete selected messages from localStorage AND Supabase
+        async function deleteSelectedMessages() {
+            if (selectedMessages.size === 0) {
+                showNotification('No messages selected', 'warning');
+                return;
+            }
+            
+            const confirmDelete = confirm(`Are you sure you want to delete ${selectedMessages.size} message(s)? This cannot be undone.`);
+            if (!confirmDelete) return;
+            
+            try {
+                // Get current messages from localStorage
+                let messages = getMessages();
+                const idsToDelete = Array.from(selectedMessages);
+                
+                // Delete from localStorage
+                messages = messages.filter(m => !idsToDelete.includes(m.id));
+                localStorage.setItem('indigoMessages', JSON.stringify(messages));
+                
+                // Delete from Supabase (if available)
+                if (supabaseAvailable && supabaseClient) {
+                    for (const id of idsToDelete) {
+                        try {
+                            const { error } = await supabaseClient
+                                .from('messages')
+                                .delete()
+                                .eq('id', id);
+                            
+                            if (error) {
+                                console.warn(`Failed to delete message ${id} from Supabase:`, error);
+                            }
+                        } catch (e) {
+                            console.warn(`Supabase delete error for message ${id}:`, e);
+                        }
+                    }
+                }
+                
+                showNotification(`${idsToDelete.length} message(s) deleted successfully`, 'success');
+                
+                // Reset and reload
+                cancelDeleteMode();
+                updateMessageBadge();
+                
+            } catch (error) {
+                console.error('Error deleting messages:', error);
+                showNotification('Failed to delete messages', 'error');
+            }
         }
         
         // Update message badge count
@@ -5625,18 +5839,6 @@
                 setTimeout(() => successMsg.remove(), 300);
             }, 5000);
         }
-        
-// ===== CLEANUP: Remove offensive message from localStorage =====
-(function() {
-    try {
-        let m = JSON.parse(localStorage.getItem('indigoMessages') || '[]');
-        m = m.filter(x => !(x.message && x.message.includes('nigga balls')));
-        localStorage.setItem('indigoMessages', JSON.stringify(m));
-        console.log('Cleaned up offensive message from localStorage');
-    } catch (e) {
-        console.log('Cleanup script error:', e);
-    }
-})();
     </script>
 </body>
 </html>
