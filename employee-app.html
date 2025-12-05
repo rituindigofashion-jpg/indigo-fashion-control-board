@@ -5007,6 +5007,9 @@
             // Update summary cards
             updateAttendanceSummaryCards();
             
+            // Update main dashboard cards (Present Today, Late Today, Early Leave Today)
+            updateMainDashboardCards();
+            
             // Reload table
             loadAttendanceTable();
             
@@ -5130,6 +5133,92 @@
                 emptyState.style.display = 'none';
                 table.style.display = 'table';
             }
+        }
+        
+        // Update main dashboard cards (Present Today, Late Today, Early Leave Today)
+        function updateMainDashboardCards() {
+            const records = getAttendanceFromStorage();
+            
+            if (records.length === 0) {
+                document.getElementById('presentTodayCount').textContent = '-';
+                document.getElementById('lateTodayCount').textContent = '-';
+                document.getElementById('earlyLeaveTodayCount').textContent = '-';
+                return;
+            }
+            
+            // Find the latest date in the uploaded data
+            const dates = [...new Set(records.map(r => r.date))].sort((a, b) => new Date(b) - new Date(a));
+            const latestDate = dates[0];
+            
+            // Get records for the latest date
+            const latestDayRecords = records.filter(r => r.date === latestDate);
+            
+            // First shift employees for late calculation
+            const firstShiftNames = ['RITU', 'SHILA', 'ARNAB', 'ARNOB', 'BADIUL', 'BODIUZZAMAN'];
+            
+            // Calculate Present: anyone who clocked in
+            const presentCount = latestDayRecords.filter(r => r.clockIn && r.clockIn !== '').length;
+            
+            // Calculate Late: using proper shift rules with 15-min grace period
+            const lateCount = latestDayRecords.filter(r => {
+                if (r.isLate) return true;
+                if (r.late && r.late !== '') return true;
+                
+                if (r.clockIn && r.clockIn !== '') {
+                    const clockInParts = r.clockIn.split(':');
+                    if (clockInParts.length >= 2) {
+                        const hour = parseInt(clockInParts[0]);
+                        const minute = parseInt(clockInParts[1]);
+                        const totalMinutes = hour * 60 + minute;
+                        
+                        const isFirstShift = firstShiftNames.some(n => 
+                            r.name && r.name.toUpperCase().includes(n)
+                        );
+                        
+                        // First shift: late if > 9:15 AM (555 min)
+                        // Second shift: late if > 10:45 AM (645 min)
+                        const lateThreshold = isFirstShift ? 555 : 645;
+                        return totalMinutes > lateThreshold;
+                    }
+                }
+                return false;
+            }).length;
+            
+            // Calculate Early Leave: anyone who left before shift end
+            const earlyLeaveCount = latestDayRecords.filter(r => {
+                if (r.isEarlyLeave) return true;
+                
+                if (r.clockOut && r.clockOut !== '') {
+                    const clockOutParts = r.clockOut.split(':');
+                    if (clockOutParts.length >= 2) {
+                        const hour = parseInt(clockOutParts[0]);
+                        const minute = parseInt(clockOutParts[1]);
+                        const totalMinutes = hour * 60 + minute;
+                        
+                        const isFirstShift = firstShiftNames.some(n => 
+                            r.name && r.name.toUpperCase().includes(n)
+                        );
+                        
+                        // First shift end: 7:00 PM (1140 min)
+                        // Second shift end: 8:30 PM (1230 min)
+                        const shiftEnd = isFirstShift ? 1140 : 1230;
+                        return totalMinutes < shiftEnd;
+                    }
+                }
+                return false;
+            }).length;
+            
+            // Update the dashboard cards
+            document.getElementById('presentTodayCount').textContent = presentCount;
+            document.getElementById('lateTodayCount').textContent = lateCount;
+            document.getElementById('earlyLeaveTodayCount').textContent = earlyLeaveCount;
+            
+            // Update pending expenses count
+            const storedExpenses = getExpensesFromStorage();
+            const pendingExpensesCount = storedExpenses.filter(exp => exp.status === 'Pending').length;
+            document.getElementById('pendingExpensesCount').textContent = pendingExpensesCount;
+            
+            console.log(`📊 Dashboard updated: ${presentCount} present, ${lateCount} late, ${earlyLeaveCount} early leave (${latestDate})`);
         }
         
         // Export attendance data
@@ -5278,31 +5367,10 @@
             updateSalaryMonthSelector();
             loadSalaryData();
             
-            // Calculate today's attendance stats
-            const today = new Date().toISOString().split('T')[0];
-            const todayAttendance = attendanceData.filter(att => att.date === today);
+            // Update main dashboard cards (Present, Late, Early Leave) from latest attendance data
+            updateMainDashboardCards();
             
-            const presentCount = todayAttendance.filter(att => att.status === 'Present' || att.status === 'Late' || (att.status === 'Absent' && att.leaveType === 'AL')).length;
-            const lateCount = todayAttendance.filter(att => {
-                if (att.status === 'Late') return true;
-                const emp = employees.find(e => e.id === att.employeeId || e.name === att.employee);
-                return emp && att.clockInTime && isLate(att.clockInTime, emp.name);
-            }).length;
-            const earlyLeaveCount = todayAttendance.filter(att => {
-                if (att.earlyLeave) return true;
-                const emp = employees.find(e => e.id === att.employeeId || e.name === att.employee);
-                return emp && att.clockOutTime && isEarlyLeave(att.clockOutTime, emp.name);
-            }).length;
-            
-            document.getElementById('presentTodayCount').textContent = presentCount;
-            document.getElementById('lateTodayCount').textContent = lateCount;
-            document.getElementById('earlyLeaveTodayCount').textContent = earlyLeaveCount;
-            
-            // Count pending expenses from localStorage
-            const storedExpenses = getExpensesFromStorage();
-            const pendingExpensesCount = storedExpenses.filter(exp => exp.status === 'Pending').length;
-            document.getElementById('pendingExpensesCount').textContent = pendingExpensesCount + expenses.length;
-            
+            // Update open orders count
             document.getElementById('openOrdersCount').textContent = getOrdersFromStorage().length;
             
             // Load rejection notifications on page load
