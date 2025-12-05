@@ -2058,7 +2058,19 @@
             let storedAttendance = [];
             if (supabaseAvailable) {
                 const currentDate = new Date();
-                storedAttendance = await getAttendanceFromSupabase(currentDate.getMonth() + 1, currentDate.getFullYear());
+                const rawAttendance = await getAttendanceFromSupabase(currentDate.getMonth() + 1, currentDate.getFullYear());
+                // Convert Supabase field names (snake_case) to expected format (camelCase)
+                storedAttendance = rawAttendance.map(r => ({
+                    name: r.employee_name,
+                    date: r.date,
+                    clockIn: r.clock_in,
+                    clockOut: r.clock_out,
+                    late: r.late_time,
+                    absent: r.absent_type,
+                    status: r.status,
+                    isLate: r.is_late,
+                    isEarlyLeave: r.is_early_leave
+                }));
             } else {
                 storedAttendance = getAttendanceFromStorage();
             }
