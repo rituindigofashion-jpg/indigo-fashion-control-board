@@ -1720,6 +1720,55 @@
                 return [];
             }
         }
+        
+        // Sync attendance from Supabase to localStorage on page load
+        // This ensures data persists across devices and browser refreshes
+        async function syncAttendanceFromSupabase() {
+            if (!supabaseAvailable) {
+                console.log('⚠️ Supabase not available, using localStorage only');
+                return false;
+            }
+            
+            try {
+                console.log('🔄 Syncing attendance from Supabase...');
+                
+                // Fetch ALL attendance records from Supabase (no month filter)
+                const { data, error } = await supabaseClient
+                    .from('attendance')
+                    .select('*')
+                    .order('date', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    // Convert Supabase format to localStorage format
+                    const localRecords = data.map(r => ({
+                        id: r.id,
+                        name: r.employee_name,
+                        date: r.date,
+                        clockIn: r.clock_in || '',
+                        clockOut: r.clock_out || '',
+                        late: r.late_time || '',
+                        absent: r.absent_type || '',
+                        shift: r.shift || 2,
+                        status: r.absent_type ? 'Absent' : (r.is_late ? 'Late' : 'Present'),
+                        isLate: r.is_late || false,
+                        isEarlyLeave: r.is_early_leave || false
+                    }));
+                    
+                    // Save to localStorage
+                    localStorage.setItem('indigoAttendanceRecords', JSON.stringify(localRecords));
+                    console.log(`✅ Synced ${localRecords.length} attendance records from Supabase to localStorage`);
+                    return true;
+                } else {
+                    console.log('ℹ️ No attendance records in Supabase yet');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error syncing from Supabase:', error);
+                return false;
+            }
+        }
 
         // Get attendance by employee
         async function getAttendanceByEmployeeFromSupabase(employeeName, startDate, endDate) {
@@ -5347,7 +5396,7 @@
         window.logout = logout;
 
         // Dashboard Initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // Check session - redirect if not logged in
             if (!checkEmployeeSession()) return;
             
@@ -5357,10 +5406,15 @@
                 localStorage.removeItem('indigoBossNotifications');
                 localStorage.removeItem('indigoNotifications');
                 localStorage.removeItem('indigoSalaryRecords');
+                localStorage.removeItem('indigoAttendanceRecords');
                 console.log('✅ All test data cleared from localStorage');
                 console.log('Reload the page to see clean data');
             };
             console.log('💡 Tip: Run clearTestData() in console to clear all test localStorage data');
+            
+            // CRITICAL: Sync attendance from Supabase FIRST (before any other initialization)
+            // This ensures data persists across devices and browser refreshes
+            await syncAttendanceFromSupabase();
             
             // Initialize salary features
             setupSalaryDropZone();
