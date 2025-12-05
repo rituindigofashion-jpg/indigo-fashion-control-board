@@ -1669,14 +1669,17 @@
             if (!supabaseAvailable) return { success: false, error: 'Supabase not available' };
             
             try {
-                // Parse and format records
+                // Parse and format records (include all calculated fields)
                 const formattedRecords = records.map(r => ({
                     employee_name: (r.name || r.employee_name || '').toUpperCase(),
                     date: parseDate(r.date),
                     clock_in: r.clockIn || r.clock_in || null,
                     clock_out: r.clockOut || r.clock_out || null,
                     late_time: r.late || r.late_time || '',
-                    absent_type: r.absent || r.absent_type || null
+                    absent_type: r.absent || r.absent_type || null,
+                    is_late: r.isLate || r.is_late || false,
+                    is_early_leave: r.isEarlyLeave || r.is_early_leave || false,
+                    shift: r.shift || 2
                 }));
 
                 const { data, error } = await supabaseClient
