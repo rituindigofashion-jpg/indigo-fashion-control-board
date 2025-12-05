@@ -4801,7 +4801,7 @@
             
             const reader = new FileReader();
             
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -4813,8 +4813,8 @@
                     // Convert to JSON
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
-                    // Parse and save the attendance data
-                    parseAttendanceExcel(jsonData, file.name);
+                    // Parse and save the attendance data (now async for Supabase sync)
+                    await parseAttendanceExcel(jsonData, file.name);
                     
                 } catch (error) {
                     console.error('Error parsing Excel file:', error);
@@ -4827,7 +4827,7 @@
         }
         
         // Parse attendance Excel data
-        function parseAttendanceExcel(data, fileName) {
+        async function parseAttendanceExcel(data, fileName) {
             if (!data || data.length < 2) {
                 showNotification('Excel file appears to be empty or invalid');
                 resetAttendanceUploadUI();
@@ -4906,11 +4906,12 @@
                         status = 'Late';
                         isLateRecord = true;
                     } else if (clockIn) {
-                        // Check if late based on shift
+                        // Check if late based on shift (with 15-min grace period)
                         const [hours, minutes] = clockIn.split(':').map(Number);
                         const clockInMinutes = hours * 60 + minutes;
-                        const shiftStart = isFirstShift ? 9 * 60 : 10 * 60 + 30; // 9:00 or 10:30
-                        if (clockInMinutes > shiftStart) {
+                        // First Shift: Late if > 9:15 AM (555 min), Second Shift: Late if > 10:45 AM (645 min)
+                        const lateThreshold = isFirstShift ? 555 : 645;
+                        if (clockInMinutes > lateThreshold) {
                             isLateRecord = true;
                         }
                     }
@@ -4979,6 +4980,20 @@
             // Save to localStorage
             saveAttendanceToStorage(existingRecords);
             
+            // Sync to Supabase (cloud database)
+            let supabaseSynced = false;
+            if (supabaseAvailable) {
+                try {
+                    const result = await insertAttendanceToSupabase(newRecords);
+                    if (result.success) {
+                        console.log(`✅ Synced ${result.count} records to Supabase`);
+                        supabaseSynced = true;
+                    }
+                } catch (e) {
+                    console.warn('Supabase sync failed, data saved locally:', e);
+                }
+            }
+            
             // Update the global attendanceData array for display
             updateAttendanceDataFromStorage();
             
@@ -4995,7 +5010,9 @@
             // Reset upload UI
             resetAttendanceUploadUI();
             
-            showNotification(`✓ Processed ${newRecords.length} attendance records`);
+            // Show notification with Supabase sync status
+            const syncStatus = supabaseSynced ? ' (synced to cloud)' : ' (saved locally)';
+            showNotification(`✓ Processed ${newRecords.length} attendance records${syncStatus}`);
         }
         
         // Parse Excel time value
