@@ -1260,20 +1260,9 @@
                         <i data-lucide="message-circle" style="width: 24px; height: 24px; vertical-align: middle;"></i>
                         Messages from Boss
                     </h3>
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn btn-secondary" onclick="refreshMessages()">
-                            <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
-                        </button>
-                        <button id="deleteMessagesBtn" class="btn btn-secondary" onclick="toggleDeleteMode()" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #dc2626;">
-                            <i data-lucide="trash-2" style="width: 16px;"></i> <span id="deleteBtnText">Delete</span>
-                        </button>
-                        <button id="confirmDeleteBtn" class="btn" onclick="deleteSelectedMessages()" style="display: none; background: #dc2626; color: white; border: none;">
-                            <i data-lucide="check" style="width: 16px;"></i> Confirm Delete
-                        </button>
-                        <button id="cancelDeleteBtn" class="btn btn-secondary" onclick="cancelDeleteMode()" style="display: none;">
-                            Cancel
-                        </button>
-                    </div>
+                    <button class="btn btn-secondary" onclick="refreshMessages()">
+                        <i data-lucide="refresh-cw" style="width: 16px;"></i> Refresh
+                    </button>
                 </div>
 
                 <!-- Messages List -->
@@ -1634,22 +1623,17 @@
         const SUPABASE_URL = 'https://jynkhlaykzcztvadvbpf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bmtobGF5a3pjenR2YWR2YnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2ODMyMjQsImV4cCI6MjA4MDI1OTIyNH0.4TKAMWSdUr1aut5CCS46FiP3RdsWMpV16xNxbvJzw2c';
 
-        let supabaseClient = null;
-        let supabaseAvailable = false;
-
         if (typeof window.supabase !== 'undefined') {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
             window.checkSupabaseConnection = async function() {
                 try {
                     const { data, error } = await supabaseClient.from('employees').select('count');
                     if (error) throw error;
                     console.log('✅ Supabase connected successfully!');
-                    supabaseAvailable = true;
                     return true;
                 } catch (e) {
                     console.warn('⚠️ Supabase not available, falling back to localStorage');
-                    supabaseAvailable = false;
                     return false;
                 }
             };
@@ -1657,580 +1641,6 @@
             window.addEventListener('load', () => checkSupabaseConnection());
         }
         // ===== END SUPABASE CONFIG =====
-
-        // ============================================
-        // SUPABASE DATA LAYER FUNCTIONS
-        // ============================================
-
-        // ===== ATTENDANCE FUNCTIONS =====
-        
-        // Insert attendance records to Supabase (batch with UPSERT)
-        async function insertAttendanceToSupabase(records) {
-            if (!supabaseAvailable) return { success: false, error: 'Supabase not available' };
-            
-            try {
-                // Parse and format records (include all calculated fields)
-                const formattedRecords = records.map(r => ({
-                    employee_name: (r.name || r.employee_name || '').toUpperCase(),
-                    date: parseDate(r.date),
-                    clock_in: r.clockIn || r.clock_in || null,
-                    clock_out: r.clockOut || r.clock_out || null,
-                    late_time: r.late || r.late_time || '',
-                    absent_type: r.absent || r.absent_type || null,
-                    is_late: r.isLate || r.is_late || false,
-                    is_early_leave: r.isEarlyLeave || r.is_early_leave || false,
-                    shift: r.shift || 2
-                }));
-
-                const { data, error } = await supabaseClient
-                    .from('attendance')
-                    .upsert(formattedRecords, { 
-                        onConflict: 'employee_name,date',
-                        ignoreDuplicates: false 
-                    });
-
-                if (error) throw error;
-                console.log(`✅ Inserted ${formattedRecords.length} attendance records`);
-                return { success: true, data, count: formattedRecords.length };
-            } catch (error) {
-                console.error('❌ Error inserting attendance:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Get attendance from Supabase
-        async function getAttendanceFromSupabase(month, year) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                let query = supabaseClient.from('attendance').select('*');
-                
-                if (month && year) {
-                    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
-                    query = query.gte('date', startDate).lte('date', endDate);
-                }
-                
-                const { data, error } = await query.order('date', { ascending: false });
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching attendance:', error);
-                return [];
-            }
-        }
-        
-        // Sync attendance from Supabase to localStorage on page load
-        // This ensures data persists across devices and browser refreshes
-        async function syncAttendanceFromSupabase() {
-            if (!supabaseAvailable) {
-                console.log('⚠️ Supabase not available, using localStorage only');
-                return false;
-            }
-            
-            try {
-                console.log('🔄 Syncing attendance from Supabase...');
-                
-                // Fetch ALL attendance records from Supabase (no month filter)
-                const { data, error } = await supabaseClient
-                    .from('attendance')
-                    .select('*')
-                    .order('date', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Convert Supabase format to localStorage format
-                    const localRecords = data.map(r => ({
-                        id: r.id,
-                        name: r.employee_name,
-                        date: r.date,
-                        clockIn: r.clock_in || '',
-                        clockOut: r.clock_out || '',
-                        late: r.late_time || '',
-                        absent: r.absent_type || '',
-                        shift: r.shift || 2,
-                        status: r.absent_type ? 'Absent' : (r.is_late ? 'Late' : 'Present'),
-                        isLate: r.is_late || false,
-                        isEarlyLeave: r.is_early_leave || false
-                    }));
-                    
-                    // Save to localStorage
-                    localStorage.setItem('indigoAttendanceRecords', JSON.stringify(localRecords));
-                    console.log(`✅ Synced ${localRecords.length} attendance records from Supabase to localStorage`);
-                    return true;
-                } else {
-                    console.log('ℹ️ No attendance records in Supabase yet');
-                    return false;
-                }
-            } catch (error) {
-                console.error('❌ Error syncing from Supabase:', error);
-                return false;
-            }
-        }
-
-        // Get attendance by employee
-        async function getAttendanceByEmployeeFromSupabase(employeeName, startDate, endDate) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                let query = supabaseClient
-                    .from('attendance')
-                    .select('*')
-                    .eq('employee_name', employeeName.toUpperCase());
-                
-                if (startDate) query = query.gte('date', startDate);
-                if (endDate) query = query.lte('date', endDate);
-                
-                const { data, error } = await query.order('date', { ascending: false });
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching employee attendance:', error);
-                return [];
-            }
-        }
-
-        // ===== EXPENSE FUNCTIONS =====
-        
-        // Insert expenses to Supabase (batch)
-        async function insertExpensesToSupabase(expenses) {
-            if (!supabaseAvailable) return { success: false, error: 'Supabase not available' };
-            
-            try {
-                const formattedExpenses = expenses.map(e => ({
-                    employee_name: e.employee || e.employee_name || null,
-                    description: e.description || '',
-                    amount: parseFloat(e.amount) || 0,
-                    category: e.category || 'Others',
-                    date: parseDate(e.date),
-                    status: e.amount < 5000 ? 'Auto-Approved' : 'Pending'
-                }));
-
-                const { data, error } = await supabaseClient
-                    .from('expenses')
-                    .insert(formattedExpenses);
-
-                if (error) throw error;
-                console.log(`✅ Inserted ${formattedExpenses.length} expenses`);
-                return { success: true, data, count: formattedExpenses.length };
-            } catch (error) {
-                console.error('❌ Error inserting expenses:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Get expenses from Supabase
-        async function getExpensesFromSupabase(filters = {}) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                let query = supabaseClient.from('expenses').select('*');
-                
-                if (filters.status) query = query.eq('status', filters.status);
-                if (filters.category) query = query.eq('category', filters.category);
-                if (filters.employee) query = query.eq('employee_name', filters.employee);
-                if (filters.startDate) query = query.gte('date', filters.startDate);
-                if (filters.endDate) query = query.lte('date', filters.endDate);
-                
-                const { data, error } = await query.order('date', { ascending: false });
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching expenses:', error);
-                return [];
-            }
-        }
-
-        // Approve expense in Supabase
-        async function approveExpenseInSupabase(expenseId, approvedBy = 'Boss') {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('expenses')
-                    .update({ 
-                        status: 'Approved',
-                        approved_by: approvedBy,
-                        approved_at: new Date().toISOString()
-                    })
-                    .eq('id', expenseId);
-
-                if (error) throw error;
-                console.log(`✅ Approved expense ${expenseId}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error approving expense:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Reject expense in Supabase
-        async function rejectExpenseInSupabase(expenseId, reason, rejectedBy = 'Boss') {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('expenses')
-                    .update({ 
-                        status: 'Rejected',
-                        rejection_reason: reason,
-                        approved_by: rejectedBy,
-                        approved_at: new Date().toISOString()
-                    })
-                    .eq('id', expenseId);
-
-                if (error) throw error;
-                console.log(`✅ Rejected expense ${expenseId}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error rejecting expense:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // ===== EMPLOYEE FUNCTIONS =====
-        
-        // Get employees from Supabase
-        async function getEmployeesFromSupabase(includeLeft = true) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                let query = supabaseClient.from('employees').select('*');
-                
-                if (!includeLeft) {
-                    query = query.eq('status', 'active');
-                }
-                
-                const { data, error } = await query.order('name', { ascending: true });
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching employees:', error);
-                return [];
-            }
-        }
-
-        // Insert employee to Supabase
-        async function insertEmployeeToSupabase(employee) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('employees')
-                    .insert({
-                        name: employee.name,
-                        department: employee.department || null,
-                        shift: employee.shift || 'Second Shift',
-                        monthly_salary: employee.monthlySalary || employee.monthly_salary || 0,
-                        status: employee.status || 'active'
-                    });
-
-                if (error) throw error;
-                console.log(`✅ Inserted employee: ${employee.name}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error inserting employee:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Update employee in Supabase
-        async function updateEmployeeInSupabase(employeeId, updates) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('employees')
-                    .update(updates)
-                    .eq('id', employeeId);
-
-                if (error) throw error;
-                console.log(`✅ Updated employee ${employeeId}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error updating employee:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // ===== ORDER FUNCTIONS =====
-        
-        // Insert orders to Supabase
-        async function insertOrdersToSupabase(orders) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const formattedOrders = orders.map(o => ({
-                    order_number: o.orderNumber || o.order_number,
-                    buyer: o.buyer,
-                    style: o.style,
-                    quantity: o.quantity,
-                    fob_price: o.fobPrice || o.fob_price,
-                    total_value: o.totalValue || o.total_value || (o.quantity * (o.fobPrice || o.fob_price)),
-                    commission_rate: o.commissionRate || o.commission_rate || 1.00,
-                    commission_amount: o.commissionAmount || o.commission_amount || (o.totalValue || o.total_value) * 0.01,
-                    status: o.status || 'Pending',
-                    order_date: parseDate(o.orderDate || o.order_date || o.date)
-                }));
-
-                const { data, error } = await supabaseClient
-                    .from('orders')
-                    .upsert(formattedOrders, { onConflict: 'order_number' });
-
-                if (error) throw error;
-                console.log(`✅ Inserted ${formattedOrders.length} orders`);
-                return { success: true, data, count: formattedOrders.length };
-            } catch (error) {
-                console.error('❌ Error inserting orders:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Get orders from Supabase
-        async function getOrdersFromSupabase(status = null) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                let query = supabaseClient.from('orders').select('*');
-                
-                if (status) query = query.eq('status', status);
-                
-                const { data, error } = await query.order('order_date', { ascending: false });
-                
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching orders:', error);
-                return [];
-            }
-        }
-
-        // Update order status
-        async function updateOrderStatusInSupabase(orderId, status) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('orders')
-                    .update({ status })
-                    .eq('id', orderId);
-
-                if (error) throw error;
-                console.log(`✅ Updated order ${orderId} to ${status}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error updating order:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // ===== MESSAGE FUNCTIONS =====
-        
-        // Insert message to Supabase
-        async function insertMessageToSupabase(message) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('messages')
-                    .insert({
-                        sender: message.sender,
-                        content: message.content,
-                        reply_to: message.replyTo || message.reply_to || null,
-                        read: false
-                    });
-
-                if (error) throw error;
-                console.log(`✅ Sent message from ${message.sender}`);
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error sending message:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Get messages from Supabase
-        async function getMessagesFromSupabase() {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('messages')
-                    .select('*')
-                    .order('timestamp', { ascending: false });
-
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching messages:', error);
-                return [];
-            }
-        }
-
-        // Mark message as read
-        async function markMessageAsReadInSupabase(messageId) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                const { data, error } = await supabaseClient
-                    .from('messages')
-                    .update({ read: true })
-                    .eq('id', messageId);
-
-                if (error) throw error;
-                return { success: true, data };
-            } catch (error) {
-                console.error('❌ Error marking message as read:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // ===== SALARY FUNCTIONS =====
-        
-        // Calculate and save salary from attendance
-        async function calculateSalaryFromSupabase(employeeName, month, year) {
-            if (!supabaseAvailable) return { success: false };
-            
-            try {
-                // Get employee details
-                const { data: employee, error: empError } = await supabaseClient
-                    .from('employees')
-                    .select('*')
-                    .eq('name', employeeName.toUpperCase())
-                    .single();
-
-                if (empError) throw empError;
-
-                // Get attendance for the month
-                const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
-                
-                const { data: attendance, error: attError } = await supabaseClient
-                    .from('attendance')
-                    .select('*')
-                    .eq('employee_name', employeeName.toUpperCase())
-                    .gte('date', startDate)
-                    .lte('date', endDate);
-
-                if (attError) throw attError;
-
-                // Calculate deductions
-                const lateDays = attendance.filter(a => a.is_late).length;
-                const ulDays = attendance.filter(a => a.absent_type === 'UL').length;
-                const alDays = attendance.filter(a => a.absent_type === 'AL').length;
-                const earlyLeaveDays = attendance.filter(a => a.is_early_leave).length;
-
-                const dailySalary = employee.monthly_salary / 26;
-                const lateDeduction = Math.floor(lateDays / 3) * dailySalary;
-                const ulDeduction = ulDays * dailySalary;
-                const netSalary = employee.monthly_salary - lateDeduction - ulDeduction;
-
-                // Insert/update salary record
-                const monthDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                
-                const { data: salaryData, error: salError } = await supabaseClient
-                    .from('salary')
-                    .upsert({
-                        employee_name: employeeName.toUpperCase(),
-                        month: monthDate,
-                        base_salary: employee.monthly_salary,
-                        late_days: lateDays,
-                        late_deduction: lateDeduction,
-                        ul_days: ulDays,
-                        ul_deduction: ulDeduction,
-                        al_days: alDays,
-                        early_leave_days: earlyLeaveDays,
-                        net_salary: netSalary,
-                        status: 'Pending'
-                    }, { onConflict: 'employee_name,month' });
-
-                if (salError) throw salError;
-
-                console.log(`✅ Calculated salary for ${employeeName}`);
-                return { 
-                    success: true, 
-                    salary: {
-                        baseSalary: employee.monthly_salary,
-                        lateDays,
-                        lateDeduction,
-                        ulDays,
-                        ulDeduction,
-                        alDays,
-                        earlyLeaveDays,
-                        netSalary
-                    }
-                };
-            } catch (error) {
-                console.error('❌ Error calculating salary:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Get salary records
-        async function getSalaryRecordsFromSupabase(month, year) {
-            if (!supabaseAvailable) return [];
-            
-            try {
-                const monthDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                
-                const { data, error } = await supabaseClient
-                    .from('salary')
-                    .select('*')
-                    .eq('month', monthDate)
-                    .order('employee_name', { ascending: true });
-
-                if (error) throw error;
-                return data || [];
-            } catch (error) {
-                console.error('❌ Error fetching salary records:', error);
-                return [];
-            }
-        }
-
-        // ===== HELPER FUNCTIONS =====
-        
-        // Parse various date formats to YYYY-MM-DD
-        function parseDate(dateStr) {
-            if (!dateStr) return null;
-            
-            // Already in YYYY-MM-DD format
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                return dateStr;
-            }
-            
-            // Format: DD-MMM-YY (e.g., "03-Nov-25")
-            if (/^\d{2}-[A-Za-z]{3}-\d{2}$/.test(dateStr)) {
-                const [day, monthStr, year] = dateStr.split('-');
-                const monthMap = {
-                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
-                    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
-                    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                };
-                const fullYear = `20${year}`;
-                return `${fullYear}-${monthMap[monthStr]}-${day}`;
-            }
-            
-            // Try parsing as Date object
-            try {
-                const d = new Date(dateStr);
-                if (!isNaN(d.getTime())) {
-                    return d.toISOString().split('T')[0];
-                }
-            } catch (e) {
-                console.warn('Could not parse date:', dateStr);
-            }
-            
-            return null;
-        }
-
-        // ============================================
-        // END SUPABASE DATA LAYER
-        // ============================================
 
         lucide.createIcons();
         
@@ -2964,7 +2374,7 @@
         let earlyLeaveChart = null;
         let expenseByCategoryChart = null;
 
-        async function showTab(tabId, element) {
+        function showTab(tabId, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
             document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.remove('hidden');
@@ -2984,7 +2394,7 @@
                 loadMessages();
             }
             if(tabId === 'reports') {
-                await renderReportsDashboard();
+                renderReportsDashboard();
             }
         }
         
@@ -3096,30 +2506,13 @@
             return d.getFullYear() === year && d.getMonth() === monthIndex;
         }
 
-        async function buildAttendanceAnalyticsForCurrentMonth() {
+        function buildAttendanceAnalyticsForCurrentMonth() {
             const { year, monthIndex, monthLabel } = getCurrentMonthInfo();
             
-            // Get attendance from Supabase or fallback to localStorage
-            let storedAttendance = [];
-            if (supabaseAvailable) {
-                storedAttendance = await getAttendanceFromSupabase(monthIndex + 1, year);
-                // Convert Supabase format to expected format
-                storedAttendance = storedAttendance.map(r => ({
-                    name: r.employee_name,
-                    date: r.date,
-                    clockIn: r.clock_in,
-                    clockOut: r.clock_out,
-                    late: r.late_time,
-                    absent: r.absent_type,
-                    status: r.status,
-                    isLate: r.is_late,
-                    isEarlyLeave: r.is_early_leave
-                }));
-            } else {
-                storedAttendance = getAttendanceFromStorage();
-            }
+            // Get attendance from localStorage (real uploaded data)
+            const storedAttendance = getAttendanceFromStorage();
             
-            // Filter records for the current/latest month (if not already filtered)
+            // Filter records for the current/latest month
             const monthRecords = storedAttendance.filter(r => isInMonth(r.date, year, monthIndex));
             
             let presentDays = 0;
@@ -3176,29 +2569,9 @@
             };
         }
 
-        async function buildExpenseAnalyticsForCurrentMonth() {
+        function buildExpenseAnalyticsForCurrentMonth() {
             const { year, monthIndex, monthLabel } = getCurrentMonthInfo();
-            
-            // Get expenses from Supabase or fallback to localStorage
-            let storedExpenses = [];
-            if (supabaseAvailable) {
-                const startDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
-                const endDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-31`;
-                storedExpenses = await getExpensesFromSupabase({ startDate, endDate });
-                // Convert Supabase format
-                storedExpenses = storedExpenses.map(e => ({
-                    id: e.id,
-                    employee: e.employee_name,
-                    description: e.description,
-                    amount: parseFloat(e.amount),
-                    category: e.category,
-                    date: e.date,
-                    status: e.status
-                }));
-            } else {
-                storedExpenses = getExpensesFromStorage();
-            }
-            
+            const storedExpenses = getExpensesFromStorage();
             const allExpenses = [...dailyExpenses, ...expenses, ...storedExpenses];
 
             // Filter by the same month as attendance data
@@ -3245,10 +2618,10 @@
             };
         }
 
-        async function renderReportsDashboard() {
+        function renderReportsDashboard() {
             const monthInfo = getCurrentMonthInfo();
-            const attendanceAnalytics = await buildAttendanceAnalyticsForCurrentMonth();
-            const expenseAnalytics = await buildExpenseAnalyticsForCurrentMonth();
+            const attendanceAnalytics = buildAttendanceAnalyticsForCurrentMonth();
+            const expenseAnalytics = buildExpenseAnalyticsForCurrentMonth();
 
             const monthLabelEl = document.getElementById('reportsMonthLabel');
             if (monthLabelEl) {
@@ -3816,210 +3189,6 @@
         function refreshMessages() {
             loadMessages();
             showNotification('Messages refreshed');
-        }
-        
-        // ============================================
-        // MESSAGE DELETION FUNCTIONALITY
-        // ============================================
-        
-        let deleteMode = false;
-        let selectedMessages = new Set();
-        
-        // Toggle delete mode
-        function toggleDeleteMode() {
-            deleteMode = !deleteMode;
-            selectedMessages.clear();
-            
-            const deleteBtn = document.getElementById('deleteMessagesBtn');
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const cancelBtn = document.getElementById('cancelDeleteBtn');
-            
-            if (deleteMode) {
-                deleteBtn.style.display = 'none';
-                confirmBtn.style.display = 'inline-flex';
-                cancelBtn.style.display = 'inline-flex';
-                confirmBtn.disabled = true;
-                confirmBtn.style.opacity = '0.5';
-                loadMessagesWithCheckboxes();
-            } else {
-                deleteBtn.style.display = 'inline-flex';
-                confirmBtn.style.display = 'none';
-                cancelBtn.style.display = 'none';
-                loadMessages();
-            }
-        }
-        
-        // Cancel delete mode
-        function cancelDeleteMode() {
-            deleteMode = false;
-            selectedMessages.clear();
-            
-            document.getElementById('deleteMessagesBtn').style.display = 'inline-flex';
-            document.getElementById('confirmDeleteBtn').style.display = 'none';
-            document.getElementById('cancelDeleteBtn').style.display = 'none';
-            
-            loadMessages();
-        }
-        
-        // Toggle message selection
-        function toggleMessageSelection(messageId) {
-            if (selectedMessages.has(messageId)) {
-                selectedMessages.delete(messageId);
-            } else {
-                selectedMessages.add(messageId);
-            }
-            
-            // Update checkbox visual
-            const checkbox = document.getElementById(`msgCheckbox${messageId}`);
-            if (checkbox) {
-                checkbox.checked = selectedMessages.has(messageId);
-            }
-            
-            // Update confirm button state
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            if (selectedMessages.size > 0) {
-                confirmBtn.disabled = false;
-                confirmBtn.style.opacity = '1';
-                confirmBtn.innerHTML = `<i data-lucide="check" style="width: 16px;"></i> Delete (${selectedMessages.size})`;
-            } else {
-                confirmBtn.disabled = true;
-                confirmBtn.style.opacity = '0.5';
-                confirmBtn.innerHTML = `<i data-lucide="check" style="width: 16px;"></i> Confirm Delete`;
-            }
-            lucide.createIcons();
-        }
-        
-        // Load messages with checkboxes for delete mode
-        function loadMessagesWithCheckboxes() {
-            const messagesList = document.getElementById('messagesList');
-            const messages = getMessages();
-            
-            // Filter messages for employee (sent by boss)
-            const employeeMessages = messages.filter(m => m.to === 'employee').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            if (employeeMessages.length === 0) {
-                messagesList.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; color: var(--color-text-muted);">
-                        <i data-lucide="inbox" style="width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.2;"></i>
-                        <h3 style="font-size: 18px; margin-bottom: 8px;">No Messages to Delete</h3>
-                        <p style="font-size: 14px;">There are no messages available</p>
-                    </div>
-                `;
-                lucide.createIcons();
-                cancelDeleteMode();
-                return;
-            }
-            
-            messagesList.innerHTML = `
-                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-                    <i data-lucide="alert-triangle" style="width: 24px; height: 24px; color: #dc2626;"></i>
-                    <div>
-                        <div style="font-weight: 600; color: #dc2626;">Delete Mode Active</div>
-                        <div style="font-size: 13px; color: #666;">Select messages to delete by clicking on them. This action cannot be undone.</div>
-                    </div>
-                </div>
-            `;
-            
-            employeeMessages.forEach(message => {
-                const messageDiv = document.createElement('div');
-                const isSelected = selectedMessages.has(message.id);
-                messageDiv.style.cssText = `
-                    background: ${isSelected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0,0,0,0.03)'};
-                    border: ${isSelected ? '2px solid #dc2626' : 'var(--glass-border)'};
-                    border-radius: 16px;
-                    padding: 24px;
-                    margin-bottom: 16px;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                `;
-                messageDiv.onclick = () => toggleMessageSelection(message.id);
-                
-                const messageDate = new Date(message.timestamp);
-                const formattedDate = messageDate.toLocaleString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true
-                });
-                
-                messageDiv.innerHTML = `
-                    <div style="display: flex; align-items: flex-start; gap: 16px;">
-                        <div style="flex-shrink: 0; padding-top: 4px;">
-                            <input type="checkbox" id="msgCheckbox${message.id}" ${isSelected ? 'checked' : ''} 
-                                style="width: 20px; height: 20px; cursor: pointer; accent-color: #dc2626;"
-                                onclick="event.stopPropagation(); toggleMessageSelection(${message.id});">
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
-                                    B
-                                </div>
-                                <div>
-                                    <div style="font-weight: 600; color: #000; font-size: 15px;">Boss</div>
-                                    <div style="font-size: 12px; color: var(--color-text-muted);">${formattedDate}</div>
-                                </div>
-                            </div>
-                            <div style="font-size: 15px; color: #333; line-height: 1.6; padding-left: 52px;">
-                                ${message.content || message.message || '(No content)'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                messagesList.appendChild(messageDiv);
-            });
-            
-            lucide.createIcons();
-        }
-        
-        // Delete selected messages from localStorage AND Supabase
-        async function deleteSelectedMessages() {
-            if (selectedMessages.size === 0) {
-                showNotification('No messages selected', 'warning');
-                return;
-            }
-            
-            const confirmDelete = confirm(`Are you sure you want to delete ${selectedMessages.size} message(s)? This cannot be undone.`);
-            if (!confirmDelete) return;
-            
-            try {
-                // Get current messages from localStorage
-                let messages = getMessages();
-                const idsToDelete = Array.from(selectedMessages);
-                
-                // Delete from localStorage
-                messages = messages.filter(m => !idsToDelete.includes(m.id));
-                localStorage.setItem('indigoMessages', JSON.stringify(messages));
-                
-                // Delete from Supabase (if available)
-                if (supabaseAvailable && supabaseClient) {
-                    for (const id of idsToDelete) {
-                        try {
-                            const { error } = await supabaseClient
-                                .from('messages')
-                                .delete()
-                                .eq('id', id);
-                            
-                            if (error) {
-                                console.warn(`Failed to delete message ${id} from Supabase:`, error);
-                            }
-                        } catch (e) {
-                            console.warn(`Supabase delete error for message ${id}:`, e);
-                        }
-                    }
-                }
-                
-                showNotification(`${idsToDelete.length} message(s) deleted successfully`, 'success');
-                
-                // Reset and reload
-                cancelDeleteMode();
-                updateMessageBadge();
-                
-            } catch (error) {
-                console.error('Error deleting messages:', error);
-                showNotification('Failed to delete messages', 'error');
-            }
         }
         
         // Update message badge count
@@ -4853,7 +4022,7 @@
             
             const reader = new FileReader();
             
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -4865,8 +4034,8 @@
                     // Convert to JSON
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
-                    // Parse and save the attendance data (now async for Supabase sync)
-                    await parseAttendanceExcel(jsonData, file.name);
+                    // Parse and save the attendance data
+                    parseAttendanceExcel(jsonData, file.name);
                     
                 } catch (error) {
                     console.error('Error parsing Excel file:', error);
@@ -4879,7 +4048,7 @@
         }
         
         // Parse attendance Excel data
-        async function parseAttendanceExcel(data, fileName) {
+        function parseAttendanceExcel(data, fileName) {
             if (!data || data.length < 2) {
                 showNotification('Excel file appears to be empty or invalid');
                 resetAttendanceUploadUI();
@@ -4958,12 +4127,11 @@
                         status = 'Late';
                         isLateRecord = true;
                     } else if (clockIn) {
-                        // Check if late based on shift (with 15-min grace period)
+                        // Check if late based on shift
                         const [hours, minutes] = clockIn.split(':').map(Number);
                         const clockInMinutes = hours * 60 + minutes;
-                        // First Shift: Late if > 9:15 AM (555 min), Second Shift: Late if > 10:45 AM (645 min)
-                        const lateThreshold = isFirstShift ? 555 : 645;
-                        if (clockInMinutes > lateThreshold) {
+                        const shiftStart = isFirstShift ? 9 * 60 : 10 * 60 + 30; // 9:00 or 10:30
+                        if (clockInMinutes > shiftStart) {
                             isLateRecord = true;
                         }
                     }
@@ -5032,20 +4200,6 @@
             // Save to localStorage
             saveAttendanceToStorage(existingRecords);
             
-            // Sync to Supabase (cloud database)
-            let supabaseSynced = false;
-            if (supabaseAvailable) {
-                try {
-                    const result = await insertAttendanceToSupabase(newRecords);
-                    if (result.success) {
-                        console.log(`✅ Synced ${result.count} records to Supabase`);
-                        supabaseSynced = true;
-                    }
-                } catch (e) {
-                    console.warn('Supabase sync failed, data saved locally:', e);
-                }
-            }
-            
             // Update the global attendanceData array for display
             updateAttendanceDataFromStorage();
             
@@ -5056,18 +4210,13 @@
             // Update summary cards
             updateAttendanceSummaryCards();
             
-            // Update main dashboard cards (Present Today, Late Today, Early Leave Today)
-            updateMainDashboardCards();
-            
             // Reload table
             loadAttendanceTable();
             
             // Reset upload UI
             resetAttendanceUploadUI();
             
-            // Show notification with Supabase sync status
-            const syncStatus = supabaseSynced ? ' (synced to cloud)' : ' (saved locally)';
-            showNotification(`✓ Processed ${newRecords.length} attendance records${syncStatus}`);
+            showNotification(`✓ Processed ${newRecords.length} attendance records`);
         }
         
         // Parse Excel time value
@@ -5182,92 +4331,6 @@
                 emptyState.style.display = 'none';
                 table.style.display = 'table';
             }
-        }
-        
-        // Update main dashboard cards (Present Today, Late Today, Early Leave Today)
-        function updateMainDashboardCards() {
-            const records = getAttendanceFromStorage();
-            
-            if (records.length === 0) {
-                document.getElementById('presentTodayCount').textContent = '-';
-                document.getElementById('lateTodayCount').textContent = '-';
-                document.getElementById('earlyLeaveTodayCount').textContent = '-';
-                return;
-            }
-            
-            // Find the latest date in the uploaded data
-            const dates = [...new Set(records.map(r => r.date))].sort((a, b) => new Date(b) - new Date(a));
-            const latestDate = dates[0];
-            
-            // Get records for the latest date
-            const latestDayRecords = records.filter(r => r.date === latestDate);
-            
-            // First shift employees for late calculation
-            const firstShiftNames = ['RITU', 'SHILA', 'ARNAB', 'ARNOB', 'BADIUL', 'BODIUZZAMAN'];
-            
-            // Calculate Present: anyone who clocked in
-            const presentCount = latestDayRecords.filter(r => r.clockIn && r.clockIn !== '').length;
-            
-            // Calculate Late: using proper shift rules with 15-min grace period
-            const lateCount = latestDayRecords.filter(r => {
-                if (r.isLate) return true;
-                if (r.late && r.late !== '') return true;
-                
-                if (r.clockIn && r.clockIn !== '') {
-                    const clockInParts = r.clockIn.split(':');
-                    if (clockInParts.length >= 2) {
-                        const hour = parseInt(clockInParts[0]);
-                        const minute = parseInt(clockInParts[1]);
-                        const totalMinutes = hour * 60 + minute;
-                        
-                        const isFirstShift = firstShiftNames.some(n => 
-                            r.name && r.name.toUpperCase().includes(n)
-                        );
-                        
-                        // First shift: late if > 9:15 AM (555 min)
-                        // Second shift: late if > 10:45 AM (645 min)
-                        const lateThreshold = isFirstShift ? 555 : 645;
-                        return totalMinutes > lateThreshold;
-                    }
-                }
-                return false;
-            }).length;
-            
-            // Calculate Early Leave: anyone who left before shift end
-            const earlyLeaveCount = latestDayRecords.filter(r => {
-                if (r.isEarlyLeave) return true;
-                
-                if (r.clockOut && r.clockOut !== '') {
-                    const clockOutParts = r.clockOut.split(':');
-                    if (clockOutParts.length >= 2) {
-                        const hour = parseInt(clockOutParts[0]);
-                        const minute = parseInt(clockOutParts[1]);
-                        const totalMinutes = hour * 60 + minute;
-                        
-                        const isFirstShift = firstShiftNames.some(n => 
-                            r.name && r.name.toUpperCase().includes(n)
-                        );
-                        
-                        // First shift end: 7:00 PM (1140 min)
-                        // Second shift end: 8:30 PM (1230 min)
-                        const shiftEnd = isFirstShift ? 1140 : 1230;
-                        return totalMinutes < shiftEnd;
-                    }
-                }
-                return false;
-            }).length;
-            
-            // Update the dashboard cards
-            document.getElementById('presentTodayCount').textContent = presentCount;
-            document.getElementById('lateTodayCount').textContent = lateCount;
-            document.getElementById('earlyLeaveTodayCount').textContent = earlyLeaveCount;
-            
-            // Update pending expenses count
-            const storedExpenses = getExpensesFromStorage();
-            const pendingExpensesCount = storedExpenses.filter(exp => exp.status === 'Pending').length;
-            document.getElementById('pendingExpensesCount').textContent = pendingExpensesCount;
-            
-            console.log(`📊 Dashboard updated: ${presentCount} present, ${lateCount} late, ${earlyLeaveCount} early leave (${latestDate})`);
         }
         
         // Export attendance data
@@ -5396,7 +4459,7 @@
         window.logout = logout;
 
         // Dashboard Initialization
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // Check session - redirect if not logged in
             if (!checkEmployeeSession()) return;
             
@@ -5406,25 +4469,41 @@
                 localStorage.removeItem('indigoBossNotifications');
                 localStorage.removeItem('indigoNotifications');
                 localStorage.removeItem('indigoSalaryRecords');
-                localStorage.removeItem('indigoAttendanceRecords');
                 console.log('✅ All test data cleared from localStorage');
                 console.log('Reload the page to see clean data');
             };
             console.log('💡 Tip: Run clearTestData() in console to clear all test localStorage data');
-            
-            // CRITICAL: Sync attendance from Supabase FIRST (before any other initialization)
-            // This ensures data persists across devices and browser refreshes
-            await syncAttendanceFromSupabase();
             
             // Initialize salary features
             setupSalaryDropZone();
             updateSalaryMonthSelector();
             loadSalaryData();
             
-            // Update main dashboard cards (Present, Late, Early Leave) from latest attendance data
-            updateMainDashboardCards();
+            // Calculate today's attendance stats
+            const today = new Date().toISOString().split('T')[0];
+            const todayAttendance = attendanceData.filter(att => att.date === today);
             
-            // Update open orders count
+            const presentCount = todayAttendance.filter(att => att.status === 'Present' || att.status === 'Late' || (att.status === 'Absent' && att.leaveType === 'AL')).length;
+            const lateCount = todayAttendance.filter(att => {
+                if (att.status === 'Late') return true;
+                const emp = employees.find(e => e.id === att.employeeId || e.name === att.employee);
+                return emp && att.clockInTime && isLate(att.clockInTime, emp.name);
+            }).length;
+            const earlyLeaveCount = todayAttendance.filter(att => {
+                if (att.earlyLeave) return true;
+                const emp = employees.find(e => e.id === att.employeeId || e.name === att.employee);
+                return emp && att.clockOutTime && isEarlyLeave(att.clockOutTime, emp.name);
+            }).length;
+            
+            document.getElementById('presentTodayCount').textContent = presentCount;
+            document.getElementById('lateTodayCount').textContent = lateCount;
+            document.getElementById('earlyLeaveTodayCount').textContent = earlyLeaveCount;
+            
+            // Count pending expenses from localStorage
+            const storedExpenses = getExpensesFromStorage();
+            const pendingExpensesCount = storedExpenses.filter(exp => exp.status === 'Pending').length;
+            document.getElementById('pendingExpensesCount').textContent = pendingExpensesCount + expenses.length;
+            
             document.getElementById('openOrdersCount').textContent = getOrdersFromStorage().length;
             
             // Load rejection notifications on page load
@@ -5521,7 +4600,7 @@
             // Add Expense Form - New implementation with auto-approval
             const addExpenseForm = document.getElementById('addExpenseForm');
             if (addExpenseForm) {
-                addExpenseForm.addEventListener('submit', async function(e) {
+                addExpenseForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
                     // Get form values
@@ -5561,31 +4640,21 @@
                     };
                     
                     // Save expense to localStorage
-                    // Save to Supabase (fallback to localStorage)
-                    if (supabaseAvailable) {
-                        const result = await insertExpensesToSupabase([{
-                            employee: expense.requestedBy,
-                            description: expense.description,
-                            amount: expense.amount,
-                            category: expense.category,
-                            date: expense.date
-                        }]);
-                        
-                        if (!result.success) {
-                            console.warn('Supabase insert failed, falling back to localStorage');
-                            saveExpenseToStorage(expense);
-                        }
-                    } else {
-                        saveExpenseToStorage(expense);
-                    }
+                    saveExpenseToStorage(expense);
                     
                     // Create boss notification ONLY for high-value expenses (>= 5000)
-                    if (amount >= 5000 && supabaseAvailable) {
-                        await insertMessageToSupabase({
-                            sender: 'employee',
-                            content: `New expense submitted: ${description} - ৳${amount}`,
-                            read: false
-                        });
+                    if (amount >= 5000) {
+                    const bossNotification = {
+                        id: expenseId,
+                        type: 'new_expense',
+                        expenseId: expenseId,
+                        expenseDescription: description,
+                        amount: amount,
+                        status: status,
+                        date: submittedAt,
+                        viewed: false
+                    };
+                    saveBossNotification(bossNotification);
                     }
                     
                     // Show success message
@@ -5609,7 +4678,7 @@
             // Quick Expense Form (from Add Expense Tab)
             const quickExpenseForm = document.getElementById('quickExpenseForm');
             if (quickExpenseForm) {
-                quickExpenseForm.addEventListener('submit', async function(e) {
+                quickExpenseForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
                     // Get form values
@@ -5648,31 +4717,22 @@
                         isNew: true
                     };
                     
-                    // Save to Supabase (fallback to localStorage)
-                    if (supabaseAvailable) {
-                        const result = await insertExpensesToSupabase([{
-                            employee: expense.requestedBy,
-                            description: expense.description,
-                            amount: expense.amount,
-                            category: expense.category,
-                            date: expense.date
-                        }]);
-                        
-                        if (!result.success) {
-                            console.warn('Supabase insert failed, falling back to localStorage');
-                            saveExpenseToStorage(expense);
-                        }
-                    } else {
-                        saveExpenseToStorage(expense);
-                    }
+                    // Save expense to localStorage
+                    saveExpenseToStorage(expense);
                     
                     // Create boss notification ONLY for high-value expenses (>= 5000)
-                    if (amount >= 5000 && supabaseAvailable) {
-                        await insertMessageToSupabase({
-                            sender: 'employee',
-                            content: `New expense submitted: ${description} - ৳${amount}`,
-                            read: false
-                        });
+                    if (amount >= 5000) {
+                        const bossNotification = {
+                            id: expenseId,
+                            type: 'new_expense',
+                            expenseId: expenseId,
+                            expenseDescription: description,
+                            amount: amount,
+                            status: status,
+                            date: submittedAt,
+                            viewed: false
+                        };
+                        saveBossNotification(bossNotification);
                     }
                     
                     // Show success message
